@@ -2,11 +2,6 @@
 - Volatile contraption
 - A world of colors
 
-Annihilation soppkoloni
-Crime Crows
-Irreverent Painter
-My little eldritch seed
-Eschaten Color Puzzler
 
 
 **Sporomancer**
@@ -14,7 +9,7 @@ Ikke kjempe mot offensive encounters, men spre sopp spores
 Long con
 Ikke umiddelbar seier, men gjør verden ulevbar for dem
 
-Isometrisk
+**Isometrisk**
 
 - Balloning
 	- Blåse opp hatten

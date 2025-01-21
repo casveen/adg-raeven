@@ -1,0 +1,9 @@
+[package]
+name = "scene3d-test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy.workspace = true
+
+core.workspace = true

@@ -1,6 +1,7 @@
 pub mod exit_game;
 pub mod input_manager;
 pub mod isometric_camera;
+pub mod player_controller;
 
 pub struct CorePlugin;
 impl bevy::prelude::Plugin for CorePlugin {

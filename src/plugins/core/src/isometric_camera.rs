@@ -1,6 +1,4 @@
-use bevy::{
-    prelude::*, utils::HashMap,
-};
+use bevy::{prelude::*, utils::HashMap};
 
 const UP: Dir3 = Dir3::Y;
 
@@ -49,6 +47,16 @@ impl CameraManager {
 
     fn get_mut(&mut self) -> &mut IsometricCamera {
         self.cameras.get_mut(&self.current_mode).unwrap()
+    }
+
+    pub fn get_camera_rotation(&self) -> Quat {
+        Quat::from_rotation_y(self.get().angle_yaw)
+    }
+    
+    pub fn get_camera_forward_horizontal(&self) -> Vec3 {
+        let mut forward = self.get_camera_transform().forward().as_vec3();
+        forward.y = 0.;
+        forward.normalize()
     }
 
     pub fn set_mode(&mut self, mode: CameraMode) {

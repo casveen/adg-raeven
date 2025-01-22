@@ -6,7 +6,7 @@ use bevy::{picking::pointer::PointerInteraction, prelude::*};
 
 use core::input_manager::{button, motion, Action, InputManager, InputModeChanged};
 
-const BOXY_PATH: &str = "models/boxy.glb";
+// const BOXY_PATH: &str = "models/boxy.glb";
 
 fn main() {
     App::new()
@@ -138,29 +138,29 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut ground_entity: ResMut<GroundEntity>,
-    asset_server: Res<AssetServer>,
-    mut graphs: ResMut<Assets<AnimationGraph>>,
+    // asset_server: Res<AssetServer>,
+    // mut graphs: ResMut<Assets<AnimationGraph>>,
 ) {
-    // boxy
-    let (graph, node_indices) = AnimationGraph::from_clips([
-        asset_server.load(GltfAssetLabel::Animation(0).from_asset(BOXY_PATH)),
-        asset_server.load(GltfAssetLabel::Animation(1).from_asset(BOXY_PATH)),
-    ]);
-    let graph_handle = graphs.add(graph);
-    commands.insert_resource(Animations {
-        animations: node_indices,
-        graph: graph_handle,
-    });
-    let boxy_transform: Transform = {
-        let mut transform = Transform::from_xyz(0.0, 1.0, 0.0);
-        transform.rotate_y(PI * 1.5);
-        transform
-    };
-    commands.spawn((
-        SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset(BOXY_PATH))),
-        boxy_transform,
-        Boxy,
-    ));
+    // // boxy
+    // let (graph, node_indices) = AnimationGraph::from_clips([
+    //     asset_server.load(GltfAssetLabel::Animation(0).from_asset(BOXY_PATH)),
+    //     asset_server.load(GltfAssetLabel::Animation(1).from_asset(BOXY_PATH)),
+    // ]);
+    // let graph_handle = graphs.add(graph);
+    // commands.insert_resource(Animations {
+    //     animations: node_indices,
+    //     graph: graph_handle,
+    // });
+    // let boxy_transform: Transform = {
+    //     let mut transform = Transform::from_xyz(0.0, 1.0, 0.0);
+    //     transform.rotate_y(PI * 1.5);
+    //     transform
+    // };
+    // commands.spawn((
+    //     SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset(BOXY_PATH))),
+    //     boxy_transform,
+    //     Boxy,
+    // ));
 
     // ground
     ground_entity.id = commands
@@ -197,7 +197,7 @@ fn setup(
     // ));
 }
 
-fn setup_once_loaded(
+fn setup_once_loaded( // HMMM, how to listen to this to ensure system runs once?
     mut commands: Commands,
     animations: Res<Animations>,
     mut players: Query<(Entity, &mut AnimationPlayer), Added<AnimationPlayer>>,

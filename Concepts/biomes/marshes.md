@@ -7,6 +7,7 @@ waterlillies (with frogs!)
 multer/cloudberries
 whatever the fluffy things are in the reference above
 fog
+dragonflies
 ## World of colors - element
 will o' wisps in lots of colors! (myabe in a special location, or throughout?)
 ## Enemies
@@ -22,3 +23,4 @@ will o wisp?
 ## Boss
 will o wisp?
 frog?
+THE WIZARD

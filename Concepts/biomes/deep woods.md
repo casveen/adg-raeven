@@ -1,3 +1,4 @@
+![[Pasted image 20250116214319.png]]
 mossy area, tree trunks. Fallen trees, etc
 ## World of colors - element
 mushrooms in lots of different colors, just spread out in environment.

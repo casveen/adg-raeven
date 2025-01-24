@@ -1,4 +1,5 @@
 use core::isometric_camera::CameraManager;
+use core::player::player_controller::PlayerSpawn;
 use std::{f32::consts::PI, time::Duration};
 
 use bevy::core::FrameCount;
@@ -12,11 +13,16 @@ fn main() {
     App::new()
         .add_plugins((DefaultPlugins, core::CorePlugin, MeshPickingPlugin))
         .insert_resource(GroundEntity::default())
+        .insert_resource(PlayerSpawn {
+            transform: Transform::from_xyz(0., 0., 0.),
+        })
         .add_systems(Startup, (setup, register_input))
-        .add_systems(Update, (setup_once_loaded, read_input))
+        // .add_systems(Update, (setup_once_loaded, read_input))
+        // .add_systems(Update, read_input)
         .add_systems(
             Update,
-            (draw_cursor, rotate_boxy, keyboard_animation_control),
+            draw_cursor,
+            // (draw_cursor, rotate_boxy, keyboard_animation_control),
         )
         .add_observer(get_input_mode_change_trigger)
         .run();
@@ -98,18 +104,18 @@ fn get_input_mode_change_trigger(trigger: Trigger<InputModeChanged>) {
     println!("TRIGGER input_mode_change: {:?}", event);
 }
 
-fn read_input(im: Res<InputManager>, fc: Res<FrameCount>, mut camera: ResMut<CameraManager>) {
-    if im.is_action_just_pressed(ACTIVATE) {
-        println!(" !!! ACTIVATE !!! ")
-    }
+// fn read_input(im: Res<InputManager>, fc: Res<FrameCount>, mut camera: ResMut<CameraManager>) {
+//     if im.is_action_just_pressed(ACTIVATE) {
+//         println!(" !!! ACTIVATE !!! ")
+//     }
 
-    // camera.move_camera_global(im.get_motion3z(MOVEMENT));
-    camera.move_camera_local(im.get_motion3z(MOVEMENT));
+//     // camera.move_camera_global(im.get_motion3z(MOVEMENT));
+//     camera.move_camera_local(im.get_motion3z(MOVEMENT));
 
-    let motion = im.get_motion(CAMERA);
-    camera.rotate_camera_yaw(motion.x);
-    camera.rotate_camera_pitch(motion.y);
-}
+//     let motion = im.get_motion(CAMERA);
+//     camera.rotate_camera_yaw(motion.x);
+//     camera.rotate_camera_pitch(motion.y);
+// }
 
 #[derive(Component)]
 struct Ground;
@@ -197,23 +203,6 @@ fn setup(
     // ));
 }
 
-fn setup_once_loaded( // HMMM, how to listen to this to ensure system runs once?
-    mut commands: Commands,
-    animations: Res<Animations>,
-    mut players: Query<(Entity, &mut AnimationPlayer), Added<AnimationPlayer>>,
-) {
-    // println!("AnimationPlayer loaded...");
-    for (entity, mut player) in &mut players {
-        let mut transitions = AnimationTransitions::new();
-        transitions
-            .play(&mut player, animations.animations[0], Duration::ZERO)
-            .repeat();
-        commands
-            .entity(entity)
-            .insert(AnimationGraphHandle(animations.graph.clone()))
-            .insert(transitions);
-    }
-}
 
 fn draw_cursor(
     pointers: Query<&PointerInteraction>,
@@ -239,31 +228,6 @@ fn draw_cursor(
                 0.2,
                 Color::WHITE,
             );
-        }
-    }
-}
-
-fn rotate_boxy(_time: Res<Time>, _boxy: Single<&mut Transform, With<Boxy>>) {
-    // boxy.rotate_y(0.2 * TAU * time.delta_secs());
-}
-
-fn keyboard_animation_control(
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut animation_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
-    animations: Res<Animations>,
-    mut current_animation: Local<usize>,
-) {
-    for (mut player, mut transitions) in &mut animation_players {
-        if keyboard_input.just_pressed(KeyCode::Enter) {
-            *current_animation = (*current_animation + 1) % animations.animations.len();
-
-            transitions
-                .play(
-                    &mut player,
-                    animations.animations[*current_animation],
-                    Duration::ZERO,
-                )
-                .repeat();
         }
     }
 }

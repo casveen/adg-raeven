@@ -125,39 +125,16 @@ impl InputManager {
                     .map(|e| (e.clone(), false)) // Disgusting clone
                     .into_iter()
                     .collect(),
-                motion: Vec2::new(0., 0.),
+                motion: motion::Motion::default(),
             },
         );
     }
 
-    pub fn get_motion(&self, action: Action) -> Vec2 {
+    pub fn get_motion(&self, action: Action) -> motion::Motion {
         if let Some(entry) = self.motion_entries.get(&action) {
-            if entry.motion.length() > 1.0 {
-                if let Some(normal) = entry.motion.try_normalize() {
-                    return normal;
-                }
-            }
-            return entry.motion;
+            return entry.motion
         }
         unreachable!("Missing action: {}", action.0)
-    }
-
-    pub fn get_motion3z(&self, action: Action) -> Vec3 {
-        let v2 = self.get_motion(action);
-        Vec3 {
-            x: -v2.x, // TODO how to handle x-axis in 3d space
-            y: 0.0,
-            z: v2.y,
-        }
-    }
-
-    pub fn get_motion3y(&self, action: Action) -> Vec3 {
-        let v2 = self.get_motion(action);
-        Vec3 {
-            x: v2.x,
-            y: v2.y,
-            z: 0.0,
-        }
     }
 
     pub fn register_action_button(&mut self, action: Action, buttons: Vec<button::Variant>) {
@@ -295,10 +272,39 @@ pub mod motion {
             mouse::AccumulatedMouseMotion,
             ButtonInput,
         },
-        math::Vec2,
+        math::{Quat, Vec2, Vec3},
         prelude::{EventReader, GamepadAxis, KeyCode, Res, ResMut},
         utils::HashSet,
     };
+
+    #[derive(Default, Debug, Clone, Copy)]
+    pub struct Motion(Vec2);
+    impl Motion {
+        pub const fn raw_vec2(&self) -> Vec2 {
+            self.0
+        }
+        pub fn vec2(&self) -> Vec2 {
+            self.0.normalize_or_zero()
+        }
+
+        pub fn get_mut(&mut self) -> &mut Vec2 {
+            &mut self.0
+        }
+
+        // Direction across global y-plane
+        pub fn get_y_dir(&self) -> Vec3 {
+            // Negative X
+            // Bevy uses right handed coordinate system with Y as up
+            let vec = Vec3::new(-self.0.x, 0.0, self.0.y);
+            if vec.length() > 1. {
+                return vec.normalize()
+            }
+            vec
+        }
+        pub fn get_motion_y(&self, rotation: f32) -> Vec3 {
+            Quat::from_rotation_y(rotation) * self.get_y_dir()
+        }
+    }
 
     #[derive(Clone, Copy)]
     pub enum Axis {
@@ -372,7 +378,7 @@ pub mod motion {
          * then the entry might want to overwrite the motion vector to Vec2::ZERO
          */
         pub motion_entries: Vec<(Entry, bool)>,
-        pub motion: Vec2,
+        pub motion: Motion,
     }
 
     impl ActionEntry {
@@ -390,16 +396,18 @@ pub mod motion {
             {
                 match mapping.input_type {
                     super::InputType::Gamepad => Self::set_gamepad_axis_motion(
-                        &mut self.motion,
+                        &mut self.motion.get_mut(),
                         &mapping.relations,
                         axis_events,
                     ),
-                    super::InputType::Keyboard => {
-                        Self::set_keyboard_motion(&mut self.motion, &mapping.relations, keyboard)
-                    }
+                    super::InputType::Keyboard => Self::set_keyboard_motion(
+                        &mut self.motion.get_mut(),
+                        &mapping.relations,
+                        keyboard,
+                    ),
                     super::InputType::Mouse => {
                         Self::set_mouse_motion(
-                            &mut self.motion,
+                            &mut self.motion.get_mut(),
                             *motion_last_frame,
                             &mapping.relations,
                             mouse_motion,

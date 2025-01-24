@@ -1,4 +1,4 @@
-use std::{f32::consts::PI, time::Duration};
+use std::time::Duration;
 
 use bevy::prelude::*;
 
@@ -19,12 +19,12 @@ struct Animations {
     graph: Handle<AnimationGraph>,
 }
 #[derive(Component)]
-struct Boxy;
+pub struct Boxy;
 const BOXY_PATH: &str = "models/boxy.glb";
 
 fn spawn_player_mesh(
     _: Trigger<OnAdd, Player>,
-    player: Single<&Transform, With<Player>>,
+    player: Single<Entity, With<Player>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut graphs: ResMut<Assets<AnimationGraph>>,
@@ -39,9 +39,8 @@ fn spawn_player_mesh(
         animations: node_indices,
         graph: graph_handle,
     });
-    commands.spawn((
+    commands.entity(*player).insert((
         SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset(BOXY_PATH))),
-        **player,
         Boxy,
     ));
 }

@@ -1,11 +1,13 @@
 use bevy::prelude::*;
 
 use crate::{
-    input_manager::{self, motion, InputManager},
-    isometric_camera::CameraManager,
+    camera::isometric_camera::CameraYaw,
+    input::input_manager::{self, motion, InputManager},
 };
 
 use super::render_plugin::RenderPlugin;
+
+const PLAYER_SPEED: f32 = 10.0;
 
 pub struct PlayerControllerPlugin;
 impl Plugin for PlayerControllerPlugin {
@@ -64,10 +66,11 @@ fn spawn_player(mut commands: Commands, player_spawn: Res<PlayerSpawn>) {
 
 fn player_movement(
     im: Res<InputManager>,
-    mut camera: ResMut<CameraManager>,
+    yaw: Res<CameraYaw>,
     mut player: Single<&mut Transform, With<Player>>,
+    time: Res<Time>,
 ) {
-    let motion = im.get_motion(MOVEMENT);
-    let cam_direction = camera.get_camera_rotation();
-    // let pos = player.translation;
+    let movement =
+        im.get_motion(MOVEMENT).get_motion_y(yaw.get()) * PLAYER_SPEED * time.delta_secs();
+    player.translation += movement;
 }

@@ -6,8 +6,20 @@ pub struct IsometricCameraPlugin;
 impl Plugin for IsometricCameraPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<CameraManager>()
+            .init_resource::<CameraYaw>()
             .add_systems(Startup, setup)
             .add_systems(Update, update);
+    }
+}
+
+#[derive(Resource, Default)]
+pub struct CameraYaw(f32);
+impl CameraYaw {
+    fn set(&mut self, val: f32) {
+        self.0 = val
+    }
+    pub fn get(&self) -> f32 {
+        self.0
     }
 }
 
@@ -49,10 +61,14 @@ impl CameraManager {
         self.cameras.get_mut(&self.current_mode).unwrap()
     }
 
+    pub fn get_yaw(&self) -> f32 {
+        self.get().angle_yaw
+    }
+
     pub fn get_camera_rotation(&self) -> Quat {
         Quat::from_rotation_y(self.get().angle_yaw)
     }
-    
+
     pub fn get_camera_forward_horizontal(&self) -> Vec3 {
         let mut forward = self.get_camera_transform().forward().as_vec3();
         forward.y = 0.;
@@ -147,6 +163,11 @@ fn setup(mut commands: Commands, camera_manager: Res<CameraManager>) {
     );
 }
 
-fn update(camera_manager: Res<CameraManager>, mut transform: Single<&mut Transform, With<Camera>>) {
+fn update(
+    camera_manager: Res<CameraManager>,
+    mut camera_yaw: ResMut<CameraYaw>,
+    mut transform: Single<&mut Transform, With<Camera>>,
+) {
     **transform = camera_manager.get_camera_transform();
+    camera_yaw.set(camera_manager.get_yaw());
 }

@@ -3,7 +3,7 @@ use bevy::{
     prelude::*,
 };
 
-use crate::input_manager as input;
+use crate::input::input_manager as input;
 
 pub struct ExitGamePlugin;
 

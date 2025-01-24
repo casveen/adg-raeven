@@ -4,8 +4,8 @@ use bevy::prelude::*;
 
 use super::player_controller::Player;
 
-pub(super) struct GraphicalModulePlugin;
-impl Plugin for GraphicalModulePlugin {
+pub(super) struct RenderPlugin;
+impl Plugin for RenderPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(spawn_player_mesh)
             .add_observer(setup_once_loaded)

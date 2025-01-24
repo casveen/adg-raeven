@@ -1,5 +1,3 @@
-use std::{f32::consts::PI, time::Duration};
-
 use bevy::prelude::*;
 
 use crate::{
@@ -7,22 +5,21 @@ use crate::{
     isometric_camera::CameraManager,
 };
 
-use super::graphical_component::GraphicalModulePlugin;
+use super::render_plugin::RenderPlugin;
 
 pub struct PlayerControllerPlugin;
 impl Plugin for PlayerControllerPlugin {
     fn build(&self, app: &mut App) {
-        app
-        .add_plugins(GraphicalModulePlugin)
-        .add_systems(
-            Startup,
-            (
-                register_input,
-                spawn_player,
-                //
-            ),
-        )
-        .add_systems(Update, player_movement);
+        app.add_plugins(RenderPlugin)
+            .add_systems(
+                Startup,
+                (
+                    register_input,
+                    spawn_player,
+                    //
+                ),
+            )
+            .add_systems(Update, player_movement);
     }
 }
 
@@ -74,4 +71,3 @@ fn player_movement(
     let cam_direction = camera.get_camera_rotation();
     // let pos = player.translation;
 }
-

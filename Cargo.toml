@@ -6,7 +6,7 @@ members = [
   "src/example-copies/scene3d-test"
 
 , "src/plugins/core"
-]
+, "src/gameplay"]
 
 [workspace.dependencies]
 bevy = "0.15.0"

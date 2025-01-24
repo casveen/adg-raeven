@@ -25,3 +25,7 @@ Cargo.lock
 
 # VSCode
 .vscode
+
+# Blender
+*.blend[0-9]*
+src/gameplay/assets

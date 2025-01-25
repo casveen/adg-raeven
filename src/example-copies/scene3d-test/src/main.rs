@@ -2,8 +2,9 @@ use core::player::player_controller::PlayerSpawn;
 
 use bevy::{picking::pointer::PointerInteraction, prelude::*};
 
-use core::input::input_manager::{button, motion, Action, InputManager, InputModeChanged, InputType};
-
+use core::input::input_manager::{
+    button, motion, Action, InputManager, InputModeChanged, InputType,
+};
 
 fn main() {
     App::new()
@@ -13,10 +14,7 @@ fn main() {
             transform: Transform::from_xyz(0., 0., 0.),
         })
         .add_systems(Startup, (setup, register_input))
-        .add_systems(
-            Update,
-            draw_cursor,
-        )
+        .add_systems(Update, draw_cursor)
         .add_observer(get_input_mode_change_trigger)
         .run();
 }
@@ -97,7 +95,6 @@ fn get_input_mode_change_trigger(trigger: Trigger<InputModeChanged>) {
     println!("TRIGGER input_mode_change: {:?}", event);
 }
 
-
 #[derive(Component)]
 struct Ground;
 
@@ -117,7 +114,6 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut ground_entity: ResMut<GroundEntity>,
 ) {
-
     // ground
     ground_entity.id = commands
         .spawn((

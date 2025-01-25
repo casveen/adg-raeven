@@ -29,6 +29,11 @@ impl Plugin for PlayerControllerPlugin {
 #[require(Transform(|| Transform::from_xyz(0., 0., 0.)))]
 pub struct Player;
 
+#[derive(Event)]
+pub struct PlayerMovementEvent {
+    pub position_delta: Option<Vec3>,
+}
+
 #[derive(Resource, Default)]
 pub struct PlayerSpawn {
     pub transform: Transform,
@@ -69,8 +74,29 @@ fn player_movement(
     yaw: Res<CameraYaw>,
     mut player: Single<&mut Transform, With<Player>>,
     time: Res<Time>,
+    mut commands: Commands,
+    mut moved_last_frame: Local<bool>,
 ) {
-    let movement =
-        im.get_motion(MOVEMENT).get_motion_y(yaw.get()) * PLAYER_SPEED * time.delta_secs();
+    let Some(direction) = im.get_motion(MOVEMENT).get_motion_opt_y(yaw.get()) else {
+        if *moved_last_frame {
+            commands.trigger(PlayerMovementEvent {
+                position_delta: None,
+            });
+        }
+        *moved_last_frame = false;
+        return;
+    };
+    let movement = direction * PLAYER_SPEED * time.delta_secs();
     player.translation += movement;
+    commands.trigger(PlayerMovementEvent {
+        position_delta: Some(movement),
+    });
+    *moved_last_frame = true;
+
+    let direction = direction.normalize(); // gamepad motion can be < 1.
+    let forward = -Vec3::Y.cross(direction);
+    let right = direction;
+    let matrix = Mat3::from_cols(right, Vec3::Y, forward);
+    let quat = Quat::from_mat3(&matrix);
+    player.rotation = quat;
 }

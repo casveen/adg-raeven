@@ -1,6 +1,6 @@
+pub mod camera;
 pub mod exit_game;
 pub mod input;
-pub mod camera;
 pub mod player;
 
 pub struct CorePlugin;

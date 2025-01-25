@@ -2,14 +2,14 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use super::player_controller::Player;
+use super::player_controller::{Player, PlayerMovementEvent};
 
 pub(super) struct RenderPlugin;
 impl Plugin for RenderPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(spawn_player_mesh)
             .add_observer(setup_once_loaded)
-            .add_systems(Update, keyboard_animation_control);
+            .add_observer(animation_motion);
     }
 }
 
@@ -47,39 +47,55 @@ fn spawn_player_mesh(
 
 fn setup_once_loaded(
     _: Trigger<OnInsert, AnimationPlayer>,
+    player: Single<Entity, With<Player>>,
     mut commands: Commands,
     animations: Res<Animations>,
     mut anim_players: Query<(Entity, &mut AnimationPlayer), With<AnimationPlayer>>,
 ) {
     println!("AnimationPlayer loaded...");
-    for (entity, mut anim_player) in &mut anim_players {
-        let mut transitions = AnimationTransitions::new();
-        transitions
-            .play(&mut anim_player, animations.animations[0], Duration::ZERO)
-            .repeat();
-        commands
-            .entity(entity)
-            .insert(AnimationGraphHandle(animations.graph.clone()))
-            .insert(transitions);
-    }
+    let (entity, mut anim_player) = anim_players.single_mut();
+    println!("player {:?}", *player);
+    println!("entt {:?}", entity);
+    let mut transitions = AnimationTransitions::new();
+    transitions
+        .play(&mut anim_player, animations.animations[0], Duration::ZERO)
+        .repeat();
+    commands
+        .entity(entity)
+        .insert(AnimationGraphHandle(animations.graph.clone()))
+        .insert(transitions);
+    commands.entity(*player).insert_children(0, &[entity]);
 }
 
-// Reference for changing animation
-//
-fn keyboard_animation_control(
-    keyboard_input: Res<ButtonInput<KeyCode>>,
+const ANIM_IDLE: usize = 0;
+const ANIM_RUN: usize = 1;
+
+const ANIMSPEED_RUN: f32 = 244.0;
+
+fn animation_motion(
+    movement_event: Trigger<PlayerMovementEvent>,
+    _: Query<&Parent, With<Player>>,
     mut animation_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
     animations: Res<Animations>,
-    mut current_animation: Local<usize>,
 ) {
-    for (mut player, mut transitions) in &mut animation_players {
-        if keyboard_input.just_pressed(KeyCode::Enter) {
-            *current_animation = (*current_animation + 1) % animations.animations.len();
+    let (mut player, mut transitions) = animation_players.single_mut();
 
+    match movement_event.event().position_delta {
+        Some(delta) => {
+            if !player.is_playing_animation(animations.animations[ANIM_RUN]) {
+                transitions
+                    .play(&mut player, animations.animations[ANIM_RUN], Duration::ZERO)
+                    .repeat();
+            }
+            for (_, anim) in player.playing_animations_mut() {
+                anim.set_speed(delta.length_squared() * ANIMSPEED_RUN);
+            }
+        }
+        None => {
             transitions
                 .play(
                     &mut player,
-                    animations.animations[*current_animation],
+                    animations.animations[ANIM_IDLE],
                     Duration::ZERO,
                 )
                 .repeat();

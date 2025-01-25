@@ -1,7 +1,4 @@
-use bevy::{
-    app::AppExit,
-    prelude::*,
-};
+use bevy::{app::AppExit, prelude::*};
 
 use crate::input::input_manager as input;
 

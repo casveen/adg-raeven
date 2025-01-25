@@ -132,7 +132,7 @@ impl InputManager {
 
     pub fn get_motion(&self, action: Action) -> motion::Motion {
         if let Some(entry) = self.motion_entries.get(&action) {
-            return entry.motion
+            return entry.motion;
         }
         unreachable!("Missing action: {}", action.0)
     }
@@ -297,12 +297,19 @@ pub mod motion {
             // Bevy uses right handed coordinate system with Y as up
             let vec = Vec3::new(-self.0.x, 0.0, self.0.y);
             if vec.length() > 1. {
-                return vec.normalize()
+                return vec.normalize();
             }
             vec
         }
         pub fn get_motion_y(&self, rotation: f32) -> Vec3 {
             Quat::from_rotation_y(rotation) * self.get_y_dir()
+        }
+        pub fn get_motion_opt_y(&self, rotation: f32) -> Option<Vec3> {
+            let dir = self.get_y_dir();
+            if dir.length() < 0.1 {
+                return None;
+            }
+            Some(Quat::from_rotation_y(rotation) * self.get_y_dir())
         }
     }
 

@@ -6,6 +6,18 @@ Raevens game for the adg
 cargo build
 ```
 
+### Building with blenvy
+This application, specifically the gameplay. uses blenvy to make the stages. 
+To make blenvy export tha stages and assets properly you need to open art/assets.blend in blender 4.2(other versions will not work!), and save once. The assets will then be exported to assets, which are the files that bevy will use to actually run the stage.
+You can get the exact version of blender needed with
+```
+sudo snap install blender_4p2 --channel=4.2lts/stable --classic
+```
+and open the file with 
+```
+blender_4p2 src/gameplay/art/assets.blend
+```
+
 ### Attaching debugger in vscode
 require symbolic link in binary directory
 ```

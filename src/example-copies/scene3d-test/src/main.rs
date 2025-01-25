@@ -1,23 +1,20 @@
-use core::isometric_camera::CameraManager;
-use std::{f32::consts::PI, time::Duration};
+use core::player::player_controller::PlayerSpawn;
 
-use bevy::core::FrameCount;
 use bevy::{picking::pointer::PointerInteraction, prelude::*};
 
-use core::input_manager::{button, motion, Action, InputManager, InputModeChanged};
-
-const BOXY_PATH: &str = "models/boxy.glb";
+use core::input::input_manager::{
+    button, motion, Action, InputManager, InputModeChanged, InputType,
+};
 
 fn main() {
     App::new()
         .add_plugins((DefaultPlugins, core::CorePlugin, MeshPickingPlugin))
         .insert_resource(GroundEntity::default())
+        .insert_resource(PlayerSpawn {
+            transform: Transform::from_xyz(0., 0., 0.),
+        })
         .add_systems(Startup, (setup, register_input))
-        .add_systems(Update, (setup_once_loaded, read_input))
-        .add_systems(
-            Update,
-            (draw_cursor, rotate_boxy, keyboard_animation_control),
-        )
+        .add_systems(Update, draw_cursor)
         .add_observer(get_input_mode_change_trigger)
         .run();
 }
@@ -48,7 +45,7 @@ fn register_input(mut im: ResMut<InputManager>) {
         MOVEMENT,
         vec![
             motion::Entry {
-                input_type: core::input_manager::InputType::Keyboard,
+                input_type: InputType::Keyboard,
                 relations: vec![
                     motion::Relation::KeyCode(KeyCode::KeyW, motion::Axis::PosY),
                     motion::Relation::KeyCode(KeyCode::KeyS, motion::Axis::NegY),
@@ -57,7 +54,7 @@ fn register_input(mut im: ResMut<InputManager>) {
                 ],
             },
             motion::Entry {
-                input_type: core::input_manager::InputType::Gamepad,
+                input_type: InputType::Gamepad,
                 relations: vec![
                     motion::Relation::GamepadAxis(GamepadAxis::LeftStickY, motion::Axis::Y),
                     motion::Relation::GamepadAxis(GamepadAxis::LeftStickX, motion::Axis::X),
@@ -70,7 +67,7 @@ fn register_input(mut im: ResMut<InputManager>) {
         CAMERA,
         vec![
             motion::Entry {
-                input_type: core::input_manager::InputType::Keyboard,
+                input_type: InputType::Keyboard,
                 relations: vec![
                     motion::Relation::KeyCode(KeyCode::KeyK, motion::Axis::PosY),
                     motion::Relation::KeyCode(KeyCode::KeyJ, motion::Axis::NegY),
@@ -79,11 +76,11 @@ fn register_input(mut im: ResMut<InputManager>) {
                 ],
             },
             motion::Entry {
-                input_type: core::input_manager::InputType::Mouse,
+                input_type: InputType::Mouse,
                 relations: vec![motion::Relation::Mouse(20.)],
             },
             motion::Entry {
-                input_type: core::input_manager::InputType::Gamepad,
+                input_type: InputType::Gamepad,
                 relations: vec![
                     motion::Relation::GamepadAxis(GamepadAxis::RightStickY, motion::Axis::Y),
                     motion::Relation::GamepadAxis(GamepadAxis::RightStickX, motion::Axis::X),
@@ -98,24 +95,8 @@ fn get_input_mode_change_trigger(trigger: Trigger<InputModeChanged>) {
     println!("TRIGGER input_mode_change: {:?}", event);
 }
 
-fn read_input(im: Res<InputManager>, fc: Res<FrameCount>, mut camera: ResMut<CameraManager>) {
-    if im.is_action_just_pressed(ACTIVATE) {
-        println!(" !!! ACTIVATE !!! ")
-    }
-
-    // camera.move_camera_global(im.get_motion3z(MOVEMENT));
-    camera.move_camera_local(im.get_motion3z(MOVEMENT));
-
-    let motion = im.get_motion(CAMERA);
-    camera.rotate_camera_yaw(motion.x);
-    camera.rotate_camera_pitch(motion.y);
-}
-
 #[derive(Component)]
 struct Ground;
-
-#[derive(Component)]
-struct Boxy;
 
 #[derive(Resource)]
 struct GroundEntity {
@@ -127,41 +108,12 @@ impl GroundEntity {
     }
 }
 
-#[derive(Resource)]
-struct Animations {
-    animations: Vec<AnimationNodeIndex>,
-    graph: Handle<AnimationGraph>,
-}
-
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut ground_entity: ResMut<GroundEntity>,
-    asset_server: Res<AssetServer>,
-    mut graphs: ResMut<Assets<AnimationGraph>>,
 ) {
-    // boxy
-    let (graph, node_indices) = AnimationGraph::from_clips([
-        asset_server.load(GltfAssetLabel::Animation(0).from_asset(BOXY_PATH)),
-        asset_server.load(GltfAssetLabel::Animation(1).from_asset(BOXY_PATH)),
-    ]);
-    let graph_handle = graphs.add(graph);
-    commands.insert_resource(Animations {
-        animations: node_indices,
-        graph: graph_handle,
-    });
-    let boxy_transform: Transform = {
-        let mut transform = Transform::from_xyz(0.0, 1.0, 0.0);
-        transform.rotate_y(PI * 1.5);
-        transform
-    };
-    commands.spawn((
-        SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset(BOXY_PATH))),
-        boxy_transform,
-        Boxy,
-    ));
-
     // ground
     ground_entity.id = commands
         .spawn((
@@ -189,30 +141,6 @@ fn setup(
         },
         Transform::from_xyz(4.0, 8.0, 4.0),
     ));
-
-    // // camera
-    // commands.spawn((
-    //     Camera3d::default(),
-    //     Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
-    // ));
-}
-
-fn setup_once_loaded(
-    mut commands: Commands,
-    animations: Res<Animations>,
-    mut players: Query<(Entity, &mut AnimationPlayer), Added<AnimationPlayer>>,
-) {
-    // println!("AnimationPlayer loaded...");
-    for (entity, mut player) in &mut players {
-        let mut transitions = AnimationTransitions::new();
-        transitions
-            .play(&mut player, animations.animations[0], Duration::ZERO)
-            .repeat();
-        commands
-            .entity(entity)
-            .insert(AnimationGraphHandle(animations.graph.clone()))
-            .insert(transitions);
-    }
 }
 
 fn draw_cursor(
@@ -239,31 +167,6 @@ fn draw_cursor(
                 0.2,
                 Color::WHITE,
             );
-        }
-    }
-}
-
-fn rotate_boxy(_time: Res<Time>, _boxy: Single<&mut Transform, With<Boxy>>) {
-    // boxy.rotate_y(0.2 * TAU * time.delta_secs());
-}
-
-fn keyboard_animation_control(
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut animation_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
-    animations: Res<Animations>,
-    mut current_animation: Local<usize>,
-) {
-    for (mut player, mut transitions) in &mut animation_players {
-        if keyboard_input.just_pressed(KeyCode::Enter) {
-            *current_animation = (*current_animation + 1) % animations.animations.len();
-
-            transitions
-                .play(
-                    &mut player,
-                    animations.animations[*current_animation],
-                    Duration::ZERO,
-                )
-                .repeat();
         }
     }
 }

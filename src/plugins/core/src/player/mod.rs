@@ -5,4 +5,4 @@
  * then sends Trigger<_,_> that the other audio/visual systems will add_observer for.
  */
 pub mod player_controller;
-pub mod render_plugin;
+pub mod player_visuals;

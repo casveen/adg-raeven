@@ -2,13 +2,15 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use super::player_controller::{Player, PlayerMovementEvent};
+use super::player_controller::{Player, PlayerFloatyEvent, PlayerMovementEvent};
 
 pub(super) struct RenderPlugin;
 impl Plugin for RenderPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(spawn_player_mesh)
             .add_observer(setup_once_loaded)
+            .add_observer(observe_movement_event)
+            .add_observer(observe_ability_event)
             .add_observer(animation_motion);
     }
 }
@@ -30,9 +32,12 @@ fn spawn_player_mesh(
     mut graphs: ResMut<Assets<AnimationGraph>>,
 ) {
     // boxy
+    // anim index matching .gltf
     let (graph, node_indices) = AnimationGraph::from_clips([
-        asset_server.load(GltfAssetLabel::Animation(0).from_asset(BOXY_PATH)),
+        asset_server.load(GltfAssetLabel::Animation(3).from_asset(BOXY_PATH)),
+        asset_server.load(GltfAssetLabel::Animation(2).from_asset(BOXY_PATH)),
         asset_server.load(GltfAssetLabel::Animation(1).from_asset(BOXY_PATH)),
+        asset_server.load(GltfAssetLabel::Animation(0).from_asset(BOXY_PATH)),
     ]);
     let graph_handle = graphs.add(graph);
     commands.insert_resource(Animations {
@@ -58,7 +63,11 @@ fn setup_once_loaded(
     println!("entt {:?}", entity);
     let mut transitions = AnimationTransitions::new();
     transitions
-        .play(&mut anim_player, animations.animations[0], Duration::ZERO)
+        .play(
+            &mut anim_player,
+            animations.animations[ANIM_IDLE],
+            Duration::ZERO,
+        )
         .repeat();
     commands
         .entity(entity)
@@ -67,10 +76,20 @@ fn setup_once_loaded(
     commands.entity(*player).insert_children(0, &[entity]);
 }
 
-const ANIM_IDLE: usize = 0;
-const ANIM_RUN: usize = 1;
+// These match index of array in Animation graph, not .gltf file
+const ANIM_IDLE: usize = 1;
+const ANIM_RUN: usize = 0;
+const ANIM_FLOATY_HAT: usize = 3;
+const ANIM_BLAST: usize = 4;
 
-const ANIMSPEED_RUN: f32 = 244.0;
+const ANIMSPEED_RUN: f32 = 1100.0;
+
+fn observe_movement_event(movement_event: Trigger<PlayerMovementEvent>) {
+    println!("Movement, {:?}", movement_event.event().position_delta);
+}
+fn observe_ability_event(ability_floaty: Trigger<PlayerFloatyEvent>) {
+    println!("ability_floaty, {:?}", ability_floaty.event().active);
+}
 
 fn animation_motion(
     movement_event: Trigger<PlayerMovementEvent>,

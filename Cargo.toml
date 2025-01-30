@@ -10,6 +10,7 @@ members = [
 
 [workspace.dependencies]
 bevy = "0.15.0"
+bevy-inspector-egui = "0.29.1"
 
 core = { path = "src/plugins/core" }
 

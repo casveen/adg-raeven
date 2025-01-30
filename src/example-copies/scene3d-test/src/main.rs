@@ -1,6 +1,7 @@
 use core::player::player_controller::PlayerSpawn;
 
 use bevy::{picking::pointer::PointerInteraction, prelude::*};
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 use core::input::input_manager::{
     button, motion, Action, InputManager, InputModeChanged, InputType,
@@ -8,7 +9,12 @@ use core::input::input_manager::{
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, core::CorePlugin, MeshPickingPlugin))
+        .add_plugins((
+            DefaultPlugins,
+            core::CorePlugin,
+            MeshPickingPlugin,
+            WorldInspectorPlugin::new(),
+        ))
         .insert_resource(GroundEntity::default())
         .insert_resource(PlayerSpawn {
             transform: Transform::from_xyz(0., 0., 0.),

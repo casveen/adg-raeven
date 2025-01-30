@@ -1,11 +1,34 @@
 # adg-raeven
 Raevens game for the adg
 
-# Note: running app
-To launch application and attach debugger to vscode, a symbolic link to the 
-assets directory is required in <project_root>/target/debug/...here...
+### Build with cargo
+```
+cargo build
+```
 
-Running application with cargo run, then have symbolic link in application dir
+### Attaching debugger in vscode
+require symbolic link in binary directory
+example: 
+```
+cd target/debug
+ln -s ../../assets assets
+cd -
+```
+vscode launch.json example
+```
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "1",
+            "program": "${workspaceFolder}/target/debug/scene3d-test",
+            "preLaunchTask": "build current"
+        },
+    ]
+```
+
+### Run with cargo
 ```
 cargo run --bin scene3d-test
 ```

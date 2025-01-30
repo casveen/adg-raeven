@@ -8,7 +8,6 @@ cargo build
 
 ### Attaching debugger in vscode
 require symbolic link in binary directory
-example: 
 ```
 cd target/debug
 ln -s ../../assets assets

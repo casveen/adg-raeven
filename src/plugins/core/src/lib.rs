@@ -2,6 +2,7 @@ pub mod camera;
 pub mod exit_game;
 pub mod input;
 pub mod player;
+pub mod fsm;
 
 pub struct CorePlugin;
 impl bevy::prelude::Plugin for CorePlugin {

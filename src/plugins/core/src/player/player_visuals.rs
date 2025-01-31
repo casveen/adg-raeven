@@ -124,7 +124,7 @@ mod fsm {
     pub const ANIM_FLOATY_HAT: usize = 2;
     pub const ANIM_BLAST: usize = 3;
 
-    const ANIMSPEED_RUN: f32 = 1100.0;
+    const ANIMSPEED_RUN: f32 = 600.0;
     pub struct AnimUpdateAggregate<'a>(
         pub &'a Animations,
         pub &'a mut AnimationPlayer,

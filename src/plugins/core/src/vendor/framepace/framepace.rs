@@ -35,7 +35,7 @@ pub fn read_input(
 #[derive(Default)]
 pub struct State(u8);
 impl State {
-    const MAX: u8 = 5;
+    const MAX: u8 = 7;
     const MIN: u8 = 0;
 
     fn increase_framerate(&mut self) -> Limiter {
@@ -56,8 +56,10 @@ impl State {
 
     fn get_framerate(&self) -> Limiter {
         match self.0 {
-            5 => Limiter::from_framerate(15.),
-            4 => Limiter::from_framerate(30.),
+            7 => Limiter::from_framerate(15.),
+            6 => Limiter::from_framerate(20.),
+            5 => Limiter::from_framerate(30.),
+            4 => Limiter::from_framerate(45.),
             3 => Limiter::from_framerate(60.),
             2 => Limiter::from_framerate(90.),
             1 => Limiter::from_framerate(120.),

@@ -1,8 +1,9 @@
 pub mod camera;
 pub mod exit_game;
+pub mod fsm;
 pub mod input;
 pub mod player;
-pub mod fsm;
+mod vendor;
 
 pub struct CorePlugin;
 impl bevy::prelude::Plugin for CorePlugin {
@@ -12,6 +13,7 @@ impl bevy::prelude::Plugin for CorePlugin {
             input::input_manager::InputManagerPlugin,
             camera::isometric_camera::IsometricCameraPlugin,
             player::player_controller::PlayerControllerPlugin,
+            vendor::plugins::VendorPlugin,
         ));
     }
 }

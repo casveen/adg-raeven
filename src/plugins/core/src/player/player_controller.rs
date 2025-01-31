@@ -33,6 +33,15 @@ pub struct Player;
 #[derive(Event)]
 pub struct PlayerMovementEvent {
     pub position_delta: Option<Vec3>,
+    pub motion: Option<Vec3>,
+}
+impl PlayerMovementEvent {
+    pub fn empty() -> Self {
+        Self {
+            position_delta: None,
+            motion: None,
+        }
+    }
 }
 
 #[derive(Component)]
@@ -105,6 +114,7 @@ fn process_input(
         if *moved_last_frame {
             commands.trigger(PlayerMovementEvent {
                 position_delta: None,
+                motion: None,
             });
         }
         *moved_last_frame = false;
@@ -114,6 +124,7 @@ fn process_input(
     player.translation += movement;
     commands.trigger(PlayerMovementEvent {
         position_delta: Some(movement),
+        motion: Some(direction),
     });
     *moved_last_frame = true;
 

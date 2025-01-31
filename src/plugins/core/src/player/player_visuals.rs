@@ -126,7 +126,8 @@ mod fsm {
     pub const ANIM_FLOATY_HAT: usize = 2;
     pub const ANIM_BLAST: usize = 3;
 
-    const ANIMSPEED_RUN: f32 = 600.0;
+    const ANIMSPEED_RUN: f32 = 8.0;
+
     pub struct AnimUpdateAggregate<'a>(
         pub &'a Animations,
         pub &'a mut AnimationPlayer,
@@ -153,7 +154,6 @@ mod fsm {
             let new_state = self.current_state.process_event(event, anim_update);
 
             let Some(new_state) = new_state else {
-                // self.process_event(event, anim_update);
                 return;
             };
 
@@ -176,12 +176,7 @@ mod fsm {
             if let AnimEvent::Movement(event) = event {
                 self.handle_movement(event, anim_update);
             } else {
-                self.handle_movement(
-                    &PlayerMovementEvent {
-                        position_delta: None,
-                    },
-                    anim_update,
-                );
+                self.handle_movement(&PlayerMovementEvent::empty(), anim_update);
             }
         }
 
@@ -246,7 +241,7 @@ mod fsm {
             let AnimUpdateAggregate(animations, anim_player, anim_transitions, time) =
                 &mut *anim_update;
 
-            match movement_event.position_delta {
+            match movement_event.motion {
                 Some(delta) => {
                     if !anim_player.is_playing_animation(animations.animations[ANIM_RUN]) {
                         anim_transitions
@@ -254,7 +249,7 @@ mod fsm {
                             .repeat();
                     }
                     for (_, anim) in anim_player.playing_animations_mut() {
-                        anim.set_speed(delta.length_squared() * ANIMSPEED_RUN * time.delta_secs());
+                        anim.set_speed(delta.length() * ANIMSPEED_RUN);
                     }
                 }
                 None => {

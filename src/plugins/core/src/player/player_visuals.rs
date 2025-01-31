@@ -88,11 +88,12 @@ fn observe_ability_event(
     mut fsm: Single<&mut AnimationComponent, With<Player>>,
     mut animation_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
     animations: Res<Animations>,
+    time: Res<Time>,
 ) {
     let (mut player, mut transitions) = animation_players.single_mut();
     fsm.fsm.process_event(
         &fsm::AnimEvent::Floaty(&floaty_event.event()),
-        &mut fsm::AnimUpdateAggregate(&animations, &mut player, &mut transitions),
+        &mut fsm::AnimUpdateAggregate(&animations, &mut player, &mut transitions, &time),
     );
 }
 
@@ -102,11 +103,12 @@ fn observe_movement_event(
     mut fsm: Single<&mut AnimationComponent, With<Player>>,
     mut animation_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
     animations: Res<Animations>,
+    time: Res<Time>,
 ) {
     let (mut player, mut transitions) = animation_players.single_mut();
     fsm.fsm.process_event(
         &fsm::AnimEvent::Movement(&movement_event.event()),
-        &mut fsm::AnimUpdateAggregate(&animations, &mut player, &mut transitions),
+        &mut fsm::AnimUpdateAggregate(&animations, &mut player, &mut transitions, &time),
     );
 }
 
@@ -124,11 +126,12 @@ mod fsm {
     pub const ANIM_FLOATY_HAT: usize = 2;
     pub const ANIM_BLAST: usize = 3;
 
-    const ANIMSPEED_RUN: f32 = 1100.0;
+    const ANIMSPEED_RUN: f32 = 6000.0;
     pub struct AnimUpdateAggregate<'a>(
         pub &'a Animations,
         pub &'a mut AnimationPlayer,
         pub &'a mut AnimationTransitions,
+        pub &'a Time,
     );
     pub enum AnimEvent<'a> {
         Movement(&'a PlayerMovementEvent),
@@ -205,7 +208,7 @@ mod fsm {
             };
 
             if event.active {
-                let AnimUpdateAggregate(animations, anim_player, anim_transitions) =
+                let AnimUpdateAggregate(animations, anim_player, anim_transitions, _time) =
                     &mut *anim_update;
                 anim_transitions
                     .play(
@@ -240,7 +243,8 @@ mod fsm {
             movement_event: &PlayerMovementEvent,
             anim_update: &mut AnimUpdateAggregate,
         ) {
-            let AnimUpdateAggregate(animations, anim_player, anim_transitions) = &mut *anim_update;
+            let AnimUpdateAggregate(animations, anim_player, anim_transitions, time) =
+                &mut *anim_update;
 
             match movement_event.position_delta {
                 Some(delta) => {
@@ -250,7 +254,7 @@ mod fsm {
                             .repeat();
                     }
                     for (_, anim) in anim_player.playing_animations_mut() {
-                        anim.set_speed(delta.length_squared() * ANIMSPEED_RUN);
+                        anim.set_speed(delta.length_squared() * ANIMSPEED_RUN * time.delta_secs());
                     }
                 }
                 None => {

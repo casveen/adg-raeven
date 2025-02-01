@@ -1,6 +1,5 @@
 pub mod camera;
 pub mod exit_game;
-pub mod fsm;
 pub mod input;
 pub mod player;
 mod settings;

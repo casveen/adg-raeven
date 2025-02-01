@@ -6,6 +6,7 @@ use crate::{
 };
 
 use super::player_visuals::RenderPlugin;
+use super::states;
 
 pub struct PlayerControllerPlugin;
 impl Plugin for PlayerControllerPlugin {
@@ -19,14 +20,28 @@ impl Plugin for PlayerControllerPlugin {
                     //
                 ),
             )
-            .add_systems(Update, process_input)
-            .add_observer(observe_event);
+            .add_systems(Update, process_input);
     }
 }
 
 #[derive(Component)]
 #[require(Transform(|| Transform::from_xyz(0., 0., 0.)))]
 pub struct Player;
+
+// Method to change states once player has been spawned
+#[macro_export]
+macro_rules! new_state {
+    ($commands:expr, $fsm:expr, $children:expr, $next_state:expr) => {{
+        for c in *$children {
+            $commands.entity(*c).remove_parent().despawn();
+        }
+        let new_state = $commands.add_observer($next_state).id();
+        $commands.entity(*$fsm).insert_children(0, &[new_state]);
+    }};
+}
+pub(super) use new_state;
+#[derive(Component)]
+pub struct PlayerFsm;
 
 #[derive(Event)]
 pub struct PlayerMovementEvent {
@@ -104,7 +119,13 @@ fn register_input(mut im: ResMut<input_manager::InputManager>) {
 }
 
 fn spawn_player(mut commands: Commands, player_spawn: Res<PlayerSpawn>) {
-    commands.spawn((Player, player_spawn.transform, fsm::Fsm::new()));
+    // Spawning of Player Fsm, use new_state! after this
+    let state = commands.add_observer(states::idle_run::process_event).id();
+    let fsm_entity = commands.spawn(PlayerFsm).insert_children(0, &[state]).id();
+
+    commands
+        .spawn((Player, player_spawn.transform))
+        .insert_children(0, &[fsm_entity]);
 }
 
 fn process_input(
@@ -141,60 +162,4 @@ fn process_input(
     commands.trigger(PlayerEvent::Movement(PlayerMovementEvent {
         motion: Some(direction),
     }));
-}
-
-fn observe_event(
-    event: Trigger<PlayerEvent>,
-    mut fsm: Single<&mut fsm::Fsm, With<Player>>,
-    mut transform: Single<&mut Transform, With<Player>>,
-    time: Res<Time>,
-) {
-    fsm.process_event(&event, &mut fsm::ContextAggregate(&mut transform, &time));
-}
-
-pub(super) mod fsm {
-    use crate::player::states::idle_run::IdleRunState;
-
-    use super::PlayerEvent;
-    use bevy::prelude::*;
-
-    pub struct ContextAggregate<'a>(pub &'a mut Transform, pub &'a Time);
-
-    pub trait TState: Send + Sync {
-        fn get_name(&self) -> &'static str;
-        fn enter_state(&self, event: &PlayerEvent, aggregate: &mut ContextAggregate);
-        fn process_event(
-            &self,
-            event: &PlayerEvent,
-            aggregate: &mut ContextAggregate,
-        ) -> Option<Box<dyn TState>>;
-    }
-
-    #[derive(Component)]
-    pub(super) struct Fsm {
-        current_state: Box<dyn TState>,
-    }
-    impl Fsm {
-        pub fn new() -> Self {
-            Self {
-                current_state: Box::new(IdleRunState),
-            }
-        }
-
-        pub(super) fn process_event(
-            &mut self,
-            event: &PlayerEvent,
-            anim_update: &mut ContextAggregate,
-        ) {
-            let new_state = self.current_state.process_event(event, anim_update);
-
-            let Some(new_state) = new_state else {
-                return;
-            };
-
-            debug!("Player enter state {}", new_state.get_name());
-            self.current_state = new_state;
-            self.current_state.enter_state(event, anim_update);
-        }
-    }
 }

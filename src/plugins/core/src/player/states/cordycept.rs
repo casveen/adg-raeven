@@ -1,32 +1,18 @@
-use crate::player::player_controller::{
-    fsm::{ContextAggregate, TState},
-    PlayerEvent,
-};
+use crate::player::player_controller::{new_state, PlayerEvent, PlayerFsm};
 use bevy::prelude::*;
 
-use super::idle_run::IdleRunState;
-
-pub struct CordyCeptState;
-impl TState for CordyCeptState {
-    fn get_name(&self) -> &'static str {
-        "CordyCeptState"
-    }
-
-    fn enter_state(&self, event: &PlayerEvent, aggregate: &mut ContextAggregate) {}
-
-    fn process_event(
-        &self,
-        event: &PlayerEvent,
-        aggregate: &mut ContextAggregate,
-    ) -> Option<Box<dyn TState>> {
-        match event {
-            PlayerEvent::CordyCept(cordycept) => {
-                if !cordycept.active {
-                    return Some(Box::new(IdleRunState));
-                }
+pub fn process_event(
+    event: Trigger<PlayerEvent>,
+    fsm: Single<Entity, With<PlayerFsm>>,
+    current_state: Single<&Children, With<PlayerFsm>>,
+    mut commands: Commands,
+) {
+    match event.event() {
+        PlayerEvent::CordyCept(event) => {
+            if !event.active {
+                new_state!(commands, fsm, current_state, super::idle_run::process_event);
             }
-            _ => (),
-        };
-        None
+        }
+        _ => (),
     }
 }

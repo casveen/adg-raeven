@@ -1,11 +1,11 @@
 use crate::player::player_controller::{
     fsm::{ContextAggregate, TState},
-    PlayerEvent,
-    PlayerMovementEvent,
+    PlayerEvent, PlayerMovementEvent,
 };
 use bevy::prelude::*;
 
-const PLAYER_RUN_SPEED: f32 = 10.0;
+const RUN_SPEED: f32 = 10.0;
+const ROTATION_SPEED: f32 = 22.0;
 
 pub struct IdleRunState;
 impl TState for IdleRunState {
@@ -32,13 +32,15 @@ impl IdleRunState {
 
         let ContextAggregate(transform, time) = &mut *aggregate;
 
-        let movement = motion * PLAYER_RUN_SPEED * time.delta_secs();
+        let movement = motion * RUN_SPEED * time.delta_secs();
         transform.translation += movement;
-        let direction = motion.normalize(); // gamepad motion can be less than 1.
-        let forward = -Vec3::Y.cross(direction);
-        let right = direction;
+
+        let right = motion.normalize(); // gamepad motion can be less than 1.
+        let forward = -Vec3::Y.cross(right);
         let matrix = Mat3::from_cols(right, Vec3::Y, forward);
         let quat = Quat::from_mat3(&matrix);
-        transform.rotation = quat;
+        transform.rotation = transform
+            .rotation
+            .slerp(quat, time.delta_secs() * ROTATION_SPEED);
     }
 }

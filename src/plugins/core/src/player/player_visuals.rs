@@ -2,15 +2,14 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use super::player_controller::{Player, PlayerFloatyEvent, PlayerMovementEvent};
+use super::player_controller::{Player, PlayerEvent};
 
 pub(super) struct RenderPlugin;
 impl Plugin for RenderPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(spawn_player_mesh)
             .add_observer(setup_once_loaded)
-            .add_observer(observe_ability_event)
-            .add_observer(observe_movement_event);
+            .add_observer(observe_player_event);
     }
 }
 
@@ -82,8 +81,8 @@ fn setup_once_loaded(
     commands.entity(*player).insert_children(0, &[entity]);
 }
 
-fn observe_ability_event(
-    floaty_event: Trigger<PlayerFloatyEvent>,
+fn observe_player_event(
+    event: Trigger<PlayerEvent>,
     _: Query<&Parent, With<Player>>,
     mut fsm: Single<&mut AnimationComponent, With<Player>>,
     mut animation_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
@@ -91,21 +90,7 @@ fn observe_ability_event(
 ) {
     let (mut player, mut transitions) = animation_players.single_mut();
     fsm.fsm.process_event(
-        &fsm::AnimEvent::Floaty(&floaty_event.event()),
-        &mut fsm::AnimUpdateAggregate(&animations, &mut player, &mut transitions),
-    );
-}
-
-fn observe_movement_event(
-    movement_event: Trigger<PlayerMovementEvent>,
-    _: Query<&Parent, With<Player>>,
-    mut fsm: Single<&mut AnimationComponent, With<Player>>,
-    mut animation_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
-    animations: Res<Animations>,
-) {
-    let (mut player, mut transitions) = animation_players.single_mut();
-    fsm.fsm.process_event(
-        &fsm::AnimEvent::Movement(&movement_event.event()),
+        &event.event(),
         &mut fsm::AnimUpdateAggregate(&animations, &mut player, &mut transitions),
     );
 }
@@ -115,7 +100,7 @@ mod fsm {
 
     use bevy::prelude::*;
 
-    use crate::player::player_controller::{PlayerFloatyEvent, PlayerMovementEvent};
+    use crate::player::player_controller::{PlayerEvent, PlayerMovementEvent};
     use crate::player::player_visuals::Animations;
 
     // These match index of array in Animation graph, not .gltf file
@@ -131,10 +116,6 @@ mod fsm {
         pub &'a mut AnimationPlayer,
         pub &'a mut AnimationTransitions,
     );
-    pub enum AnimEvent<'a> {
-        Movement(&'a PlayerMovementEvent),
-        Floaty(&'a PlayerFloatyEvent),
-    }
     pub struct StateMovement;
     pub struct StateFloaty;
     pub struct Fsm {
@@ -147,7 +128,7 @@ mod fsm {
             }
         }
 
-        pub fn process_event(&mut self, event: &AnimEvent, anim_update: &mut AnimUpdateAggregate) {
+        pub fn process_event(&mut self, event: &PlayerEvent, anim_update: &mut AnimUpdateAggregate) {
             let new_state = self.current_state.process_event(event, anim_update);
 
             let Some(new_state) = new_state else {
@@ -160,17 +141,17 @@ mod fsm {
     }
 
     pub trait TState: Send + Sync {
-        fn enter_state(&self, event: &AnimEvent, anim_update: &mut AnimUpdateAggregate);
+        fn enter_state(&self, event: &PlayerEvent, anim_update: &mut AnimUpdateAggregate);
         fn process_event(
             &self,
-            event: &AnimEvent,
+            event: &PlayerEvent,
             anim_update: &mut AnimUpdateAggregate,
         ) -> Option<Box<dyn TState>>;
     }
 
     impl TState for StateMovement {
-        fn enter_state(&self, event: &AnimEvent, anim_update: &mut AnimUpdateAggregate) {
-            if let AnimEvent::Movement(event) = event {
+        fn enter_state(&self, event: &PlayerEvent, anim_update: &mut AnimUpdateAggregate) {
+            if let PlayerEvent::Movement(event) = event {
                 self.handle_movement(event, anim_update);
             } else {
                 self.handle_movement(&PlayerMovementEvent::empty(), anim_update);
@@ -179,23 +160,23 @@ mod fsm {
 
         fn process_event(
             &self,
-            event: &AnimEvent,
+            event: &PlayerEvent,
             anim_update: &mut AnimUpdateAggregate,
         ) -> Option<Box<dyn TState>> {
-            if let AnimEvent::Movement(event) = event {
+            if let PlayerEvent::Movement(event) = event {
                 self.handle_movement(event, anim_update);
                 return None;
             }
 
             match event {
-                AnimEvent::Floaty(_) => Some(Box::new(StateFloaty)),
+                PlayerEvent::Floaty(_) => Some(Box::new(StateFloaty)),
                 _ => None,
             }
         }
     }
     impl TState for StateFloaty {
-        fn enter_state(&self, event: &AnimEvent, anim_update: &mut AnimUpdateAggregate) {
-            let AnimEvent::Floaty(event) = event else {
+        fn enter_state(&self, event: &PlayerEvent, anim_update: &mut AnimUpdateAggregate) {
+            let PlayerEvent::Floaty(event) = event else {
                 return;
             };
 
@@ -214,11 +195,11 @@ mod fsm {
 
         fn process_event(
             &self,
-            event: &AnimEvent,
+            event: &PlayerEvent,
             _anim_update: &mut AnimUpdateAggregate,
         ) -> Option<Box<dyn TState>> {
             match event {
-                AnimEvent::Floaty(event) => {
+                PlayerEvent::Floaty(event) => {
                     if !event.active {
                         return Some(Box::new(StateMovement));
                     }

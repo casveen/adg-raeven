@@ -114,30 +114,30 @@ fn process_input(
     mut moved_last_frame: Local<bool>,
 ) {
     if im.is_action_just_pressed(ABILITY_FLOATY) {
-        commands.trigger(PlayerFloatyEvent { active: true });
+        commands.trigger(PlayerEvent::Floaty(PlayerFloatyEvent { active: true }));
     } else if im.is_action_just_released(ABILITY_FLOATY) {
-        commands.trigger(PlayerFloatyEvent { active: false });
+        commands.trigger(PlayerEvent::Floaty(PlayerFloatyEvent { active: false }));
     }
 
     if im.is_action_just_pressed(ABILITY_CORDYCEPT) {
-        commands.trigger(PlayerCordyCeptEvent { active: true });
+        commands.trigger(PlayerEvent::CordyCept(PlayerCordyCeptEvent {
+            active: true,
+        }));
     } else if im.is_action_just_released(ABILITY_CORDYCEPT) {
-        commands.trigger(PlayerCordyCeptEvent { active: false });
+        commands.trigger(PlayerEvent::CordyCept(PlayerCordyCeptEvent {
+            active: false,
+        }));
     }
 
     let Some(direction) = im.get_motion(MOVEMENT).get_motion_opt_y(yaw.get()) else {
         if *moved_last_frame {
-            commands.trigger(PlayerMovementEvent { motion: None });
+            commands.trigger(PlayerEvent::Movement(PlayerMovementEvent { motion: None }));
         }
         *moved_last_frame = false;
         return;
     };
     *moved_last_frame = true;
 
-    commands.trigger(PlayerMovementEvent {
-        motion: Some(direction),
-    });
-    //tmp
     commands.trigger(PlayerEvent::Movement(PlayerMovementEvent {
         motion: Some(direction),
     }));

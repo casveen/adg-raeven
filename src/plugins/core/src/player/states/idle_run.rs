@@ -1,6 +1,9 @@
 use crate::{
     new_state,
-    player::player_controller::{Player, PlayerEvent, PlayerFsm, PlayerMovementEvent},
+    player::{
+        player_controller::{Player, PlayerEvent, PlayerFsm, PlayerMovementEvent},
+        states::utils::movement,
+    },
 };
 use bevy::prelude::*;
 
@@ -43,11 +46,5 @@ fn idle_run(event: &PlayerMovementEvent, transform: &mut Transform, time: &Time)
     let movement = motion * RUN_SPEED * time.delta_secs();
     transform.translation += movement;
 
-    let right = motion.normalize(); // gamepad motion can be less than 1.
-    let forward = -Vec3::Y.cross(right);
-    let matrix = Mat3::from_cols(right, Vec3::Y, forward);
-    let quat = Quat::from_mat3(&matrix);
-    transform.rotation = transform
-        .rotation
-        .slerp(quat, time.delta_secs() * ROTATION_SPEED);
+    movement::rotate_player(motion, transform, ROTATION_SPEED, time);
 }

@@ -1,14 +1,21 @@
 use crate::{
     new_state,
-    player::player_controller::{PlayerEvent, PlayerFsm},
+    player::player_controller::{Player, PlayerEvent, PlayerFsm},
 };
 use bevy::prelude::*;
 
+use super::utils::movement;
+
+const RUN_SPEED: f32 = 7.0;
+const ROTATION_SPEED: f32 = 15.0;
+
 pub fn process_event(
     event: Trigger<PlayerEvent>,
+    mut commands: Commands,
     fsm: Single<Entity, With<PlayerFsm>>,
     current_state: Single<&Children, With<PlayerFsm>>,
-    mut commands: Commands,
+    mut transform: Single<&mut Transform, With<Player>>,
+    time: Res<Time>,
 ) {
     match event.event() {
         PlayerEvent::CordyCept(event) => {
@@ -20,7 +27,11 @@ pub fn process_event(
             // get entities?
             // ability might just be global, as long as someone has the status
             if let Some(motion) = event.motion {
-                commands.trigger(CordyCeptMovement(motion));
+                let movement = motion * RUN_SPEED * time.delta_secs();
+                transform.translation += movement;
+                movement::rotate_player(motion, &mut *transform, ROTATION_SPEED, &time);
+
+                commands.trigger(CordyCeptMovement(movement));
             }
         }
         _ => (),

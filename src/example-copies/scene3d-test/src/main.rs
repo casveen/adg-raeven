@@ -131,14 +131,6 @@ fn setup(
         .id()
         .index();
 
-    // cube
-    commands.spawn((
-        Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
-        MeshMaterial3d(materials.add(Color::srgb_u8(120, 0, 180))),
-        Transform::from_xyz(0.0, 0.5, 0.0),
-        // PickingBehavior::IGNORE,
-    ));
-
     // light
     commands.spawn((
         PointLight {

@@ -1,4 +1,5 @@
 pub mod camera;
+pub mod enemies;
 pub mod exit_game;
 pub mod input;
 pub mod player;
@@ -13,6 +14,7 @@ impl bevy::prelude::Plugin for CorePlugin {
             input::input_manager::InputManagerPlugin,
             camera::isometric_camera::IsometricCameraPlugin,
             player::player_controller::PlayerControllerPlugin,
+            enemies::EnemiesPlugin,
             settings::plugins::VendorPlugin,
         ));
     }

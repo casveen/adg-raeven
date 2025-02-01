@@ -16,6 +16,18 @@ pub fn process_event(
                 new_state!(commands, fsm, current_state, super::idle_run::process_event);
             }
         }
+        PlayerEvent::Movement(event) => {
+            // get entities?
+            // ability might just be global, as long as someone has the status
+            if let Some(motion) = event.motion {
+                commands.trigger(CordyCeptMovement(motion));
+            }
+        }
         _ => (),
     }
 }
+
+#[derive(Component)]
+pub struct CordyCeptedComponent;
+#[derive(Event)]
+pub struct CordyCeptMovement(pub Vec3);

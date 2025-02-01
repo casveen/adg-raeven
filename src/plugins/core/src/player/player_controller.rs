@@ -161,11 +161,12 @@ pub(super) mod fsm {
     pub struct ContextAggregate<'a>(pub &'a mut Transform, pub &'a Time);
 
     pub trait TState: Send + Sync {
+        fn get_name(&self) -> &'static str;
         fn enter_state(&self, event: &PlayerEvent, aggregate: &mut ContextAggregate);
         fn process_event(
             &self,
             event: &PlayerEvent,
-            anim_update: &mut ContextAggregate,
+            aggregate: &mut ContextAggregate,
         ) -> Option<Box<dyn TState>>;
     }
 
@@ -191,6 +192,7 @@ pub(super) mod fsm {
                 return;
             };
 
+            debug!("Player enter state {}", new_state.get_name());
             self.current_state = new_state;
             self.current_state.enter_state(event, anim_update);
         }

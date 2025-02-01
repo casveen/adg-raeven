@@ -4,11 +4,17 @@ use crate::player::player_controller::{
 };
 use bevy::prelude::*;
 
+use super::{cordycept::CordyCeptState, floaty::FloatyState};
+
 const RUN_SPEED: f32 = 10.0;
 const ROTATION_SPEED: f32 = 22.0;
 
 pub struct IdleRunState;
 impl TState for IdleRunState {
+    fn get_name(&self) -> &'static str {
+        "IdleRunState"
+    }
+
     fn enter_state(&self, event: &PlayerEvent, aggregate: &mut ContextAggregate) {}
 
     fn process_event(
@@ -18,7 +24,16 @@ impl TState for IdleRunState {
     ) -> Option<Box<dyn TState>> {
         match event {
             PlayerEvent::Movement(event) => self.idle_run(event, aggregate),
-            _ => (),
+            PlayerEvent::Floaty(event) => {
+                if event.active {
+                    return Some(Box::new(FloatyState));
+                }
+            }
+            PlayerEvent::CordyCept(event) => {
+                if event.active {
+                    return Some(Box::new(CordyCeptState));
+                }
+            }
         };
         None
     }

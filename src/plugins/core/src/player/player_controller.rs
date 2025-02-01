@@ -28,18 +28,6 @@ impl Plugin for PlayerControllerPlugin {
 #[require(Transform(|| Transform::from_xyz(0., 0., 0.)))]
 pub struct Player;
 
-// Method to change states once player has been spawned
-#[macro_export]
-macro_rules! new_state {
-    ($commands:expr, $fsm:expr, $children:expr, $next_state:expr) => {{
-        for c in *$children {
-            $commands.entity(*c).remove_parent().despawn();
-        }
-        let new_state = $commands.add_observer($next_state).id();
-        $commands.entity(*$fsm).insert_children(0, &[new_state]);
-    }};
-}
-pub(super) use new_state;
 #[derive(Component)]
 pub struct PlayerFsm;
 

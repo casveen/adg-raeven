@@ -1,8 +1,8 @@
-use crate::player::player_controller::{
-    new_state, Player, PlayerEvent, PlayerFsm, PlayerMovementEvent,
+use crate::{
+    new_state,
+    player::player_controller::{Player, PlayerEvent, PlayerFsm, PlayerMovementEvent},
 };
 use bevy::prelude::*;
-
 
 const RUN_SPEED: f32 = 10.0;
 const ROTATION_SPEED: f32 = 22.0;
@@ -24,7 +24,12 @@ pub fn process_event(
         }
         PlayerEvent::CordyCept(event) => {
             if event.active {
-                new_state!(commands, fsm, current_state, super::cordycept::process_event);
+                new_state!(
+                    commands,
+                    fsm,
+                    current_state,
+                    super::cordycept::process_event
+                );
             }
         }
     }

@@ -3,6 +3,7 @@ pub mod exit_game;
 pub mod input;
 pub mod player;
 mod settings;
+mod utils;
 
 pub struct CorePlugin;
 impl bevy::prelude::Plugin for CorePlugin {

@@ -1,4 +1,7 @@
-use crate::player::player_controller::{new_state, PlayerEvent, PlayerFsm};
+use crate::{
+    new_state,
+    player::player_controller::{PlayerEvent, PlayerFsm},
+};
 use bevy::prelude::*;
 
 pub fn process_event(

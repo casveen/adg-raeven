@@ -7,8 +7,6 @@ use crate::{
 
 use super::player_visuals::RenderPlugin;
 
-const PLAYER_SPEED: f32 = 10.0;
-
 pub struct PlayerControllerPlugin;
 impl Plugin for PlayerControllerPlugin {
     fn build(&self, app: &mut App) {
@@ -22,7 +20,7 @@ impl Plugin for PlayerControllerPlugin {
                 ),
             )
             .add_systems(Update, process_input)
-            .add_observer(ability_floaty);
+            .add_observer(observe_event);
     }
 }
 
@@ -32,24 +30,29 @@ pub struct Player;
 
 #[derive(Event)]
 pub struct PlayerMovementEvent {
-    pub position_delta: Option<Vec3>,
     pub motion: Option<Vec3>,
 }
 impl PlayerMovementEvent {
     pub fn empty() -> Self {
-        Self {
-            position_delta: None,
-            motion: None,
-        }
+        Self { motion: None }
     }
 }
-
-#[derive(Component)]
-struct AbilityFloatyComponent;
 
 #[derive(Event)]
 pub struct PlayerFloatyEvent {
     pub active: bool,
+}
+
+#[derive(Event)]
+pub struct PlayerCordyCeptEvent {
+    pub active: bool,
+}
+
+#[derive(Event)]
+pub enum PlayerEvent {
+    Movement(PlayerMovementEvent),
+    Floaty(PlayerFloatyEvent),
+    CordyCept(PlayerCordyCeptEvent),
 }
 
 #[derive(Resource, Default)]
@@ -59,6 +62,7 @@ pub struct PlayerSpawn {
 
 static MOVEMENT: input_manager::Action = input_manager::Action("movement");
 static ABILITY_FLOATY: input_manager::Action = input_manager::Action("ability_floaty");
+static ABILITY_CORDYCEPT: input_manager::Action = input_manager::Action("ability_cordycept");
 
 fn register_input(mut im: ResMut<input_manager::InputManager>) {
     im.register_action_motion(
@@ -90,17 +94,22 @@ fn register_input(mut im: ResMut<input_manager::InputManager>) {
             button::Variant::Gamepad(GamepadButton::North),
         ],
     );
+    im.register_action_button(
+        ABILITY_CORDYCEPT,
+        vec![
+            button::Variant::Keyboard(KeyCode::KeyJ),
+            button::Variant::Gamepad(GamepadButton::East),
+        ],
+    );
 }
 
 fn spawn_player(mut commands: Commands, player_spawn: Res<PlayerSpawn>) {
-    commands.spawn((Player, player_spawn.transform, AbilityFloatyComponent));
+    commands.spawn((Player, player_spawn.transform, fsm::Fsm::new()));
 }
 
 fn process_input(
     im: Res<InputManager>,
     yaw: Res<CameraYaw>,
-    mut player: Single<&mut Transform, With<Player>>,
-    time: Res<Time>,
     mut commands: Commands,
     mut moved_last_frame: Local<bool>,
 ) {
@@ -110,35 +119,80 @@ fn process_input(
         commands.trigger(PlayerFloatyEvent { active: false });
     }
 
+    if im.is_action_just_pressed(ABILITY_CORDYCEPT) {
+        commands.trigger(PlayerCordyCeptEvent { active: true });
+    } else if im.is_action_just_released(ABILITY_CORDYCEPT) {
+        commands.trigger(PlayerCordyCeptEvent { active: false });
+    }
+
     let Some(direction) = im.get_motion(MOVEMENT).get_motion_opt_y(yaw.get()) else {
         if *moved_last_frame {
-            commands.trigger(PlayerMovementEvent {
-                position_delta: None,
-                motion: None,
-            });
+            commands.trigger(PlayerMovementEvent { motion: None });
         }
         *moved_last_frame = false;
         return;
     };
-    let movement = direction * PLAYER_SPEED * time.delta_secs();
-    player.translation += movement;
-    commands.trigger(PlayerMovementEvent {
-        position_delta: Some(movement),
-        motion: Some(direction),
-    });
     *moved_last_frame = true;
 
-    let direction = direction.normalize(); // gamepad motion can be less than 1.
-    let forward = -Vec3::Y.cross(direction);
-    let right = direction;
-    let matrix = Mat3::from_cols(right, Vec3::Y, forward);
-    let quat = Quat::from_mat3(&matrix);
-    player.rotation = quat;
+    commands.trigger(PlayerMovementEvent {
+        motion: Some(direction),
+    });
+    //tmp
+    commands.trigger(PlayerEvent::Movement(PlayerMovementEvent {
+        motion: Some(direction),
+    }));
 }
 
-fn ability_floaty(
-    trigger: Trigger<PlayerFloatyEvent>,
-    _floaty_ability: Single<&AbilityFloatyComponent, With<Player>>,
+fn observe_event(
+    event: Trigger<PlayerEvent>,
+    mut fsm: Single<&mut fsm::Fsm, With<Player>>,
+    mut transform: Single<&mut Transform, With<Player>>,
+    time: Res<Time>,
 ) {
-    println!("Ability Floaty active: {:?}", trigger.event().active);
+    fsm.process_event(&event, &mut fsm::ContextAggregate(&mut transform, &time));
+}
+
+pub(super) mod fsm {
+    use crate::player::states::idle_run::IdleRunState;
+
+    use super::PlayerEvent;
+    use bevy::prelude::*;
+
+    pub struct ContextAggregate<'a>(pub &'a mut Transform, pub &'a Time);
+
+    pub trait TState: Send + Sync {
+        fn enter_state(&self, event: &PlayerEvent, aggregate: &mut ContextAggregate);
+        fn process_event(
+            &self,
+            event: &PlayerEvent,
+            anim_update: &mut ContextAggregate,
+        ) -> Option<Box<dyn TState>>;
+    }
+
+    #[derive(Component)]
+    pub(super) struct Fsm {
+        current_state: Box<dyn TState>,
+    }
+    impl Fsm {
+        pub fn new() -> Self {
+            Self {
+                current_state: Box::new(IdleRunState),
+            }
+        }
+
+        pub(super) fn process_event(
+            &mut self,
+            event: &PlayerEvent,
+            anim_update: &mut ContextAggregate,
+        ) {
+            let new_state = self.current_state.process_event(event, anim_update);
+
+            let Some(new_state) = new_state else {
+                return;
+            };
+
+            self.current_state = new_state;
+            self.current_state.enter_state(event, anim_update);
+        }
+    }
 }

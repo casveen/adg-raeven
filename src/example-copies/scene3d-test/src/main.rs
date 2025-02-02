@@ -18,7 +18,7 @@ fn main() {
             MeshPickingPlugin,
             WorldInspectorPlugin::new(),
         ))
-        .add_systems(Startup, (setup, setup_walls,  register_input))
+        .add_systems(Startup, (setup, setup_walls, register_input))
         .add_systems(Update, draw_cursor)
         .add_observer(get_input_mode_change_trigger)
         .run();

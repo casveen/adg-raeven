@@ -11,6 +11,7 @@ impl Plugin for EnemiesPlugin {
                 (
                     ant::wall_collision,
                     ant::spawner_evaluate_spawning,
+                    ant::tick_spawn_timers,
                     ant::respawn_timer.run_if(ant::respawn_timer_run_if),
                 ),
             )

@@ -25,9 +25,14 @@ impl AntSpawner {
     fn increment(&mut self) {
         self.current_num_ants += 1
     }
+    fn decrement(&mut self) {
+        self.current_num_ants -= 1
+    }
 
+    // fn should_spawn(&self, children: &Children) -> bool {
     fn should_spawn(&self) -> bool {
         self.current_num_ants < self.max_ants
+        // (children.len() as u8) < self.max_ants
     }
 }
 
@@ -45,14 +50,22 @@ pub(super) struct SpawnAnt {
 pub struct KillAnt;
 
 pub(super) fn spawner_evaluate_spawning(
+    // query: Query<(Entity, &Children, &mut AntSpawner), Without<AntRespawnTimer>>,
     mut query: Query<(Entity, &mut AntSpawner), Without<AntRespawnTimer>>,
     mut commands: Commands,
 ) {
+    // for (entity, _, _) in query.iter().filter(|(_, c, s)| s.should_spawn(c)) {
     for (entity, mut spawner) in query.iter_mut().filter(|(_, s)| s.should_spawn()) {
         spawner.increment();
         commands.entity(entity).insert((AntRespawnTimer {
-            timer: Timer::new(Duration::from_millis(1500), TimerMode::Once),
+            timer: Timer::from_seconds(1.5, TimerMode::Once),
         },));
+    }
+}
+
+pub(super) fn tick_spawn_timers(mut query: Query<&mut AntRespawnTimer>, time: Res<Time>) {
+    for mut timer in query.iter_mut() {
+        timer.timer.tick(time.wrap_period());
     }
 }
 
@@ -75,7 +88,6 @@ pub(super) fn respawn_timer(
 
 pub(super) fn spawn_ant(
     event: Trigger<SpawnAnt>,
-    spawner: Single<Entity>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -85,13 +97,13 @@ pub(super) fn spawn_ant(
         .spawn((
             Mesh3d(meshes.add(Cuboid::from_size(t.scale))),
             MeshMaterial3d(materials.add(Color::srgb_u8(190, 0, 180))),
-            event.event().transform,
+            t,
             Collider::cuboid(t.scale.x, t.scale.y, t.scale.z),
             Ant,
             CollidingEntities::default(),
         ))
         .id();
-    commands.entity(*spawner).add_child(new_ant);
+    commands.entity(event.entity()).add_child(new_ant);
 }
 
 pub fn cordyceptmovement(
@@ -121,17 +133,7 @@ pub fn wall_collision(
     }
 }
 
-pub fn kill_ant(
-    _: Trigger<KillAnt>,
-    // spawner: Single<&Parent>,
-    antity: Single<Entity>,
-    mut commands: Commands,
-) {
-    commands.entity(*antity).remove_parent();
-    // commands.entity(spawner.get()).insert((
-    //     RespawnInstance {
-    //         timer: Timer::new(Duration::from_millis(1500), TimerMode::Once),
-    //     },
-    //     AntSpawnInstance,
-    // ));
+pub(super) fn kill_ant(event: Trigger<KillAnt>, mut commands: Commands) {
+    todo!("AntSpawner should have a child entity which acts as a container for existing ants");
+    commands.entity(event.entity()).remove_parent().despawn();
 }

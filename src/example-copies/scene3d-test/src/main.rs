@@ -3,7 +3,7 @@ use bevy::math::ops::{cos, sin};
 use bevy::{picking::pointer::PointerInteraction, prelude::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
-use core::enemies::ant::AntSpawn;
+use core::enemies::ant::AntSpawner;
 use core::game_world::{Ground, Wall};
 use core::input::input_manager::{
     button, motion, Action, InputManager, InputModeChanged, InputType,
@@ -18,7 +18,7 @@ fn main() {
             MeshPickingPlugin,
             WorldInspectorPlugin::new(),
         ))
-        .add_systems(Startup, (setup, setup_walls, spawn_ant, register_input))
+        .add_systems(Startup, (setup, setup_walls,  register_input))
         .add_systems(Update, draw_cursor)
         .add_observer(get_input_mode_change_trigger)
         .run();
@@ -125,6 +125,14 @@ fn setup(
         },
         Transform::from_xyz(4.0, 8.0, 4.0),
     ));
+
+    // ant spawner
+    commands.spawn((
+        Mesh3d(meshes.add(Sphere::new(0.6))),
+        MeshMaterial3d(materials.add(Color::srgb(0.8, 0.1, 0.5))),
+        Transform::from_xyz(5.5, 1., 0.),
+        AntSpawner::new(1),
+    ));
 }
 
 pub fn setup_walls(
@@ -158,12 +166,6 @@ pub fn setup_walls(
         RigidBody::Dynamic,
         CollidingEntities::default(),
     ));
-}
-
-pub fn spawn_ant(mut commands: Commands) {
-    commands.trigger(AntSpawn {
-        transform: Transform::from_xyz(0., 1.0, 0.),
-    });
 }
 
 fn draw_cursor(

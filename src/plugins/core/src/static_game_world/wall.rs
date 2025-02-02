@@ -23,7 +23,7 @@ pub(super) fn setup_walls(
         Wall,
     ));
 
-    // test
+    // test rigidbody
     let mut t = Transform::from_xyz(1.0, 4.0, 2.0);
     let an = 60.0_f32.to_radians();
     let a = sin(an / 2.);

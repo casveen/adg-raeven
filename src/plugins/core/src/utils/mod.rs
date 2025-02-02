@@ -1,2 +1,2 @@
-pub(crate) mod collision_data;
+pub(crate) mod collision;
 pub(crate) mod fsm;

@@ -1,7 +1,7 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
 
-use crate::utils::collision_data::get_contactdata_global_position;
+use crate::utils::collision::get_contactdata_global_position;
 use crate::{player::states::cordycept::CordyCeptMovement, static_game_world::wall::Wall};
 
 #[derive(Component)]
@@ -51,47 +51,26 @@ pub fn observe_cordyceptmovement(
 #[derive(Default, Reflect, GizmoConfigGroup)]
 pub struct CollisionGizmo;
 
-pub fn ant_collision(
-    query: Query<(Entity, &CollidingEntities, &Transform), With<Ant>>,
-    transform_query: Query<&Transform>,
-    collisions: Res<Collisions>,
-    mut gizmos: Gizmos<CollisionGizmo>,
+pub fn ant_wall_collision(
+    ant_query: Query<(Entity, &CollidingEntities), With<Ant>>,
+    wall_query: Query<Entity, With<Wall>>,
+    mut commands: Commands,
 ) {
-    for (entity, colliding_entities, transform) in &query {
-        println!("ant_collision: {}, {:?}", entity, colliding_entities);
+    for (entity, colliding_entities) in &ant_query {
         for colliding_entity in colliding_entities.iter() {
-            let Some(contacts) = collisions.get(entity, *colliding_entity) else {
-                continue;
-            };
-            for manifold in contacts.manifolds.iter() {
-                let Some(contact_data) = manifold.find_deepest_contact() else {
-                    return;
-                };
-                gizmos.cross(
-                    Isometry3d::from_translation(get_contactdata_global_position(
-                        entity,
-                        transform,
-                        contacts,
-                        contact_data,
-                    )),
-                    3.0,
-                    Color::srgb(1., 0., 0.),
-                );
-
-                let Ok(transform) = transform_query.get(*colliding_entity) else {
-                    return;
-                };
-                gizmos.cross(
-                    Isometry3d::from_translation(get_contactdata_global_position(
-                        *colliding_entity,
-                        transform,
-                        contacts,
-                        contact_data,
-                    )),
-                    3.0,
-                    Color::srgb(0., 0., 1.),
-                );
+            if wall_query.contains(*colliding_entity) {
+                println!("ant wall collision: {}, {:?}", entity, colliding_entities);
+                kill_ant(entity, &mut commands);
             }
         }
     }
+}
+
+fn kill_ant(antity: Entity, commands: &mut Commands) {
+    commands.entity(antity).despawn();
+
+    // todo: make dedicated spawner
+    commands.trigger(AntSpawn {
+        transform: Transform::from_xyz(0., 1.0, 0.),
+    });
 }

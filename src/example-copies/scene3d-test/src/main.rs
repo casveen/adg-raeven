@@ -1,11 +1,14 @@
+use avian3d::prelude::*;
+use bevy::math::ops::{cos, sin};
 use bevy::{picking::pointer::PointerInteraction, prelude::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
-use core::player::player_controller::PlayerSpawn;
-
+use core::enemies::ant::AntSpawn;
+use core::game_world::{Ground, Wall};
 use core::input::input_manager::{
     button, motion, Action, InputManager, InputModeChanged, InputType,
 };
+use core::player::player_controller::PlayerSpawn;
 
 fn main() {
     App::new()
@@ -15,11 +18,10 @@ fn main() {
             MeshPickingPlugin,
             WorldInspectorPlugin::new(),
         ))
-        .insert_resource(GroundEntity::default())
         .insert_resource(PlayerSpawn {
             transform: Transform::from_xyz(0., 0., 0.),
         })
-        .add_systems(Startup, (setup, register_input))
+        .add_systems(Startup, (setup, setup_walls, spawn_ant, register_input))
         .add_systems(Update, draw_cursor)
         .add_observer(get_input_mode_change_trigger)
         .run();
@@ -101,35 +103,18 @@ fn get_input_mode_change_trigger(trigger: Trigger<InputModeChanged>) {
     println!("TRIGGER input_mode_change: {:?}", event);
 }
 
-#[derive(Component)]
-struct Ground;
-
-#[derive(Resource)]
-struct GroundEntity {
-    id: u32,
-}
-impl GroundEntity {
-    fn default() -> GroundEntity {
-        GroundEntity { id: 0 }
-    }
-}
-
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut ground_entity: ResMut<GroundEntity>,
 ) {
     // ground
-    ground_entity.id = commands
-        .spawn((
-            Mesh3d(meshes.add(Circle::new(4.0))),
-            MeshMaterial3d(materials.add(Color::WHITE)),
-            Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
-            Ground,
-        ))
-        .id()
-        .index();
+    commands.spawn((
+        Mesh3d(meshes.add(Circle::new(4.0))),
+        MeshMaterial3d(materials.add(Color::WHITE)),
+        Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
+        Ground,
+    ));
 
     // light
     commands.spawn((
@@ -141,10 +126,49 @@ fn setup(
     ));
 }
 
+pub fn setup_walls(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let mut t = Transform::from_xyz(3.0, 1.0, 4.0);
+    t.scale = Vec3::new(2.0, 1.0, 2.0);
+    commands.spawn((
+        Mesh3d(meshes.add(Cuboid::from_size(t.scale))),
+        MeshMaterial3d(materials.add(Color::srgb_u8(190, 255, 220))),
+        t,
+        Collider::cuboid(t.scale.x, t.scale.y, t.scale.z),
+        RigidBody::Static,
+        Wall,
+    ));
+
+    // test rigidbody
+    let mut t = Transform::from_xyz(1.0, 4.0, 2.0);
+    let an = 60.0_f32.to_radians();
+    let a = sin(an / 2.);
+    let d = Vec3::new(1., 2., 1.).normalize();
+    t.rotation = Quat::from_xyzw(a * d.x, a * d.y, a * d.z, cos(an / 2.));
+    t.scale = Vec3::new(1.0, 1.0, 1.0);
+    commands.spawn((
+        Mesh3d(meshes.add(Cuboid::from_size(t.scale))),
+        MeshMaterial3d(materials.add(Color::srgb_u8(190, 255, 220))),
+        t,
+        Collider::cuboid(t.scale.x, t.scale.y, t.scale.z),
+        RigidBody::Dynamic,
+        CollidingEntities::default(),
+    ));
+}
+
+pub fn spawn_ant(mut commands: Commands) {
+    commands.trigger(AntSpawn {
+        transform: Transform::from_xyz(0., 1.0, 0.),
+    });
+}
+
 fn draw_cursor(
     pointers: Query<&PointerInteraction>,
     mut gizmos: Gizmos,
-    ground_entity: Res<GroundEntity>,
+    ground_entity: Query<Entity, With<Ground>>,
 ) {
     // draw circle just above ground plane
     for (entity, point, normal) in pointers
@@ -156,7 +180,7 @@ fn draw_cursor(
                 .map(|(position, normal)| (entity, position, normal))
         })
     {
-        if entity.index() == ground_entity.id {
+        if ground_entity.contains(*entity) {
             gizmos.circle(
                 Isometry3d::new(
                     point + normal * 0.01,

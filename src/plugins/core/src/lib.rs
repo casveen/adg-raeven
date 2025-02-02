@@ -3,10 +3,10 @@ use avian3d::PhysicsPlugins;
 pub mod camera;
 pub mod enemies;
 pub mod exit_game;
+pub mod game_world;
 pub mod input;
 pub mod player;
 mod settings;
-pub mod static_game_world;
 mod utils;
 
 pub struct CorePlugin;
@@ -19,7 +19,6 @@ impl bevy::prelude::Plugin for CorePlugin {
             player::player_controller::PlayerControllerPlugin,
             enemies::EnemiesPlugin,
             settings::plugins::VendorPlugin,
-            static_game_world::StaticGameWorldPlugin,
             PhysicsPlugins::default(), // avian3d
         ));
     }

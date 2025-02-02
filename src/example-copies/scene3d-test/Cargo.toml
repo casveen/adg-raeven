@@ -7,5 +7,6 @@ edition = "2021"
 bevy.workspace = true
 bevy-inspector-egui.workspace = true
 bevy_framepace.workspace = true
+avian3d.workspace = true
 
 core.workspace = true

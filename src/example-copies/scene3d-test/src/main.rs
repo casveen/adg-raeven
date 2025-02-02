@@ -128,10 +128,11 @@ fn setup(
 
     // ant spawner
     commands.spawn((
-        Mesh3d(meshes.add(Sphere::new(0.6))),
+        Mesh3d(meshes.add(Cylinder::new(0.6, 2.0))),
         MeshMaterial3d(materials.add(Color::srgb(0.8, 0.1, 0.5))),
-        Transform::from_xyz(5.5, 1., 0.),
-        AntSpawner::new(1),
+        // Transform::from_xyz(-1.5, 1., 0.),
+        Transform::from_xyz(3., 1., 0.),
+        AntSpawner::new(2),
     ));
 }
 

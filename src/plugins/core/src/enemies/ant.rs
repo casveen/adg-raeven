@@ -9,7 +9,6 @@ use crate::{game_world::Wall, player::states::cordycept::CordyCeptMovement};
 pub struct Ant;
 
 #[derive(Component)]
-#[require(Transform)]
 pub struct AntSpawner {
     max_ants: u8,
     current_num_ants: u8,
@@ -29,10 +28,8 @@ impl AntSpawner {
         self.current_num_ants -= 1
     }
 
-    // fn should_spawn(&self, children: &Children) -> bool {
     fn should_spawn(&self) -> bool {
         self.current_num_ants < self.max_ants
-        // (children.len() as u8) < self.max_ants
     }
 }
 
@@ -50,11 +47,9 @@ pub(super) struct SpawnAnt {
 pub struct KillAnt;
 
 pub(super) fn spawner_evaluate_spawning(
-    // query: Query<(Entity, &Children, &mut AntSpawner), Without<AntRespawnTimer>>,
     mut query: Query<(Entity, &mut AntSpawner), Without<AntRespawnTimer>>,
     mut commands: Commands,
 ) {
-    // for (entity, _, _) in query.iter().filter(|(_, c, s)| s.should_spawn(c)) {
     for (entity, mut spawner) in query.iter_mut().filter(|(_, s)| s.should_spawn()) {
         spawner.increment();
         commands.entity(entity).insert((AntRespawnTimer {
@@ -65,7 +60,7 @@ pub(super) fn spawner_evaluate_spawning(
 
 pub(super) fn tick_spawn_timers(mut query: Query<&mut AntRespawnTimer>, time: Res<Time>) {
     for mut timer in query.iter_mut() {
-        timer.timer.tick(time.wrap_period());
+        timer.timer.tick(time.delta());
     }
 }
 
@@ -81,7 +76,7 @@ pub(super) fn respawn_timer(
         commands.entity(entity).remove::<AntRespawnTimer>();
 
         commands.entity(entity).trigger(SpawnAnt {
-            transform: transform.with_scale(Vec3::ONE * 1.1),
+            transform: *transform,
         });
     }
 }
@@ -92,7 +87,9 @@ pub(super) fn spawn_ant(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let t = event.event().transform;
+    let mut t = event.event().transform;
+    t.scale = Vec3::ONE * 1.1;
+    warn!("WHAT TRANSFORM IS WRONG??: {:?}", t);
     let new_ant = commands
         .spawn((
             Mesh3d(meshes.add(Cuboid::from_size(t.scale))),
@@ -126,14 +123,25 @@ pub fn wall_collision(
     for (entity, colliding_entities) in &ant_query {
         for colliding_entity in colliding_entities.iter() {
             if wall_query.contains(*colliding_entity) {
-                println!("ant wall collision: {}, {:?}", entity, colliding_entities);
+                debug!("ant wall collision: {}, {:?}", entity, colliding_entities);
                 commands.entity(entity).trigger(KillAnt);
             }
         }
     }
 }
 
-pub(super) fn kill_ant(event: Trigger<KillAnt>, mut commands: Commands) {
-    todo!("AntSpawner should have a child entity which acts as a container for existing ants");
+pub(super) fn kill_ant(
+    event: Trigger<KillAnt>,
+    q_parent: Query<&Parent>,
+    mut q_spawners: Query<&mut AntSpawner>,
+    mut commands: Commands,
+) {
+    let Ok(parent) = q_parent.get(event.entity()) else {
+        return;
+    };
+    let Ok(mut spawner) = q_spawners.get_mut(parent.get()) else {
+        return;
+    };
+    spawner.decrement();
     commands.entity(event.entity()).remove_parent().despawn();
 }

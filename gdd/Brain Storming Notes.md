@@ -61,4 +61,5 @@ Gitt en peker fra hytta om hvor de neste ritual objektene ligger
 + Spre sopper for å fjerne godgjøre vanskelige områder
 	+ men det krever at spilleren går til vanskelige områder? og faktisk bruker tid der...
 	+ effekten av at spilleren har vært der burde heller komme i etterkant av at de har suksessfullt åpnet veien videre mot en ingrendiens
-+ 
+
+[[PuzzleGame]]

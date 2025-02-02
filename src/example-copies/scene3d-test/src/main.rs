@@ -1,7 +1,7 @@
-use core::player::player_controller::PlayerSpawn;
-
 use bevy::{picking::pointer::PointerInteraction, prelude::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+
+use core::player::player_controller::PlayerSpawn;
 
 use core::input::input_manager::{
     button, motion, Action, InputManager, InputModeChanged, InputType,

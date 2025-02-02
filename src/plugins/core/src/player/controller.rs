@@ -5,28 +5,19 @@ use crate::{
     input::input_manager::{self, button, motion, InputManager},
 };
 
-use super::player_visuals::RenderPlugin;
 use super::states;
 
-pub struct PlayerControllerPlugin;
-impl Plugin for PlayerControllerPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(RenderPlugin)
-            .add_systems(
-                Startup,
-                (
-                    register_input,
-                    spawn_player,
-                    //
-                ),
-            )
-            .add_systems(Update, process_input);
-    }
+enum PlayerState {
+    NotSpawned,
+    Dead,
+    Alive,
 }
 
 #[derive(Component)]
 #[require(Transform(|| Transform::from_xyz(0., 0., 0.)))]
-pub struct Player;
+pub struct Player {
+    state: PlayerState,
+}
 
 #[derive(Component)]
 pub struct PlayerFsm;
@@ -58,7 +49,7 @@ pub enum PlayerEvent {
     CordyCept(PlayerCordyCeptEvent),
 }
 
-#[derive(Resource, Default)]
+#[derive(Event, Default)]
 pub struct PlayerSpawn {
     pub transform: Transform,
 }
@@ -67,7 +58,7 @@ static MOVEMENT: input_manager::Action = input_manager::Action("movement");
 static ABILITY_FLOATY: input_manager::Action = input_manager::Action("ability_floaty");
 static ABILITY_CORDYCEPT: input_manager::Action = input_manager::Action("ability_cordycept");
 
-fn register_input(mut im: ResMut<input_manager::InputManager>) {
+pub(super) fn register_input(mut im: ResMut<input_manager::InputManager>) {
     im.register_action_motion(
         MOVEMENT,
         vec![
@@ -106,17 +97,31 @@ fn register_input(mut im: ResMut<input_manager::InputManager>) {
     );
 }
 
-fn spawn_player(mut commands: Commands, player_spawn: Res<PlayerSpawn>) {
+pub(super) fn spawn_player(
+    player_spawn: Trigger<PlayerSpawn>,
+    query: Query<&Player>,
+    mut commands: Commands,
+) {
+    // lazy assertion
+    if !query.is_empty() {
+        unreachable!("Trying to spawn a new player entity. STOP!");
+    }
+
     // Spawning of Player Fsm, use new_state! after this
     let state = commands.add_observer(states::idle_run::process_event).id();
     let fsm_entity = commands.spawn(PlayerFsm).insert_children(0, &[state]).id();
 
     commands
-        .spawn((Player, player_spawn.transform))
+        .spawn((
+            Player {
+                state: PlayerState::Alive,
+            },
+            player_spawn.transform,
+        ))
         .insert_children(0, &[fsm_entity]);
 }
 
-fn process_input(
+pub(super) fn process_input(
     im: Res<InputManager>,
     yaw: Res<CameraYaw>,
     mut commands: Commands,

@@ -8,7 +8,7 @@ use core::game_world::{Ground, Wall};
 use core::input::input_manager::{
     button, motion, Action, InputManager, InputModeChanged, InputType,
 };
-use core::player::player_controller::PlayerSpawn;
+use core::player::controller::PlayerSpawn;
 
 fn main() {
     App::new()
@@ -18,9 +18,6 @@ fn main() {
             MeshPickingPlugin,
             WorldInspectorPlugin::new(),
         ))
-        .insert_resource(PlayerSpawn {
-            transform: Transform::from_xyz(0., 0., 0.),
-        })
         .add_systems(Startup, (setup, setup_walls, spawn_ant, register_input))
         .add_systems(Update, draw_cursor)
         .add_observer(get_input_mode_change_trigger)
@@ -108,6 +105,10 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    commands.trigger(PlayerSpawn {
+        transform: Transform::from_xyz(0., 0., 0.),
+    });
+
     // ground
     commands.spawn((
         Mesh3d(meshes.add(Circle::new(4.0))),

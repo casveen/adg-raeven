@@ -2,31 +2,24 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use super::player_controller::{Player, PlayerEvent};
-
-pub(super) struct RenderPlugin;
-impl Plugin for RenderPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_observer(spawn_player_mesh)
-            .add_observer(setup_once_loaded)
-            .add_observer(observe_player_event);
-    }
-}
+use super::controller::{Player, PlayerEvent};
 
 #[derive(Resource)]
 pub struct Animations {
     pub animations: Vec<AnimationNodeIndex>,
     graph: Handle<AnimationGraph>,
 }
+
 #[derive(Component)]
 pub struct AnimationComponent {
     pub fsm: fsm::Fsm,
 }
+
 #[derive(Component)]
 pub struct Boxy;
 const BOXY_PATH: &str = "models/boxy.glb";
 
-fn spawn_player_mesh(
+pub(super) fn spawn_player_mesh(
     _: Trigger<OnAdd, Player>,
     player: Single<Entity, With<Player>>,
     mut commands: Commands,
@@ -55,7 +48,7 @@ fn spawn_player_mesh(
     ));
 }
 
-fn setup_once_loaded(
+pub(super) fn setup_once_loaded(
     _: Trigger<OnInsert, AnimationPlayer>,
     player: Single<Entity, With<Player>>,
     mut commands: Commands,
@@ -81,7 +74,7 @@ fn setup_once_loaded(
     commands.entity(*player).insert_children(0, &[entity]);
 }
 
-fn observe_player_event(
+pub(super) fn observe_player_event(
     event: Trigger<PlayerEvent>,
     _: Query<&Parent, With<Player>>,
     mut fsm: Single<&mut AnimationComponent, With<Player>>,
@@ -100,8 +93,8 @@ mod fsm {
 
     use bevy::prelude::*;
 
-    use crate::player::player_controller::{PlayerEvent, PlayerMovementEvent};
-    use crate::player::player_visuals::Animations;
+    use crate::player::controller::{PlayerEvent, PlayerMovementEvent};
+    use crate::player::visuals::Animations;
 
     // These match index of array in Animation graph, not .gltf file
     pub const ANIM_IDLE: usize = 1;
@@ -128,7 +121,11 @@ mod fsm {
             }
         }
 
-        pub fn process_event(&mut self, event: &PlayerEvent, anim_update: &mut AnimUpdateAggregate) {
+        pub fn process_event(
+            &mut self,
+            event: &PlayerEvent,
+            anim_update: &mut AnimUpdateAggregate,
+        ) {
             let new_state = self.current_state.process_event(event, anim_update);
 
             let Some(new_state) = new_state else {

@@ -1,6 +1,6 @@
 use crate::{
     new_state,
-    player::player_controller::{Player, PlayerEvent, PlayerFsm},
+    player::controller::{Player, PlayerEvent, PlayerFsm},
 };
 use bevy::prelude::*;
 

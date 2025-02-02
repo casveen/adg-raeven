@@ -1,7 +1,7 @@
 use crate::{
     new_state,
     player::{
-        player_controller::{Player, PlayerEvent, PlayerFsm, PlayerMovementEvent},
+        controller::{Player, PlayerEvent, PlayerFsm, PlayerMovementEvent},
         states::utils::movement,
     },
 };

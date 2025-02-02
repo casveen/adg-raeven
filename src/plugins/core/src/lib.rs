@@ -16,7 +16,7 @@ impl bevy::prelude::Plugin for CorePlugin {
             exit_game::ExitGamePlugin,
             input::input_manager::InputManagerPlugin,
             camera::isometric_camera::IsometricCameraPlugin,
-            player::player_controller::PlayerControllerPlugin,
+            player::PlayerPlugin,
             enemies::EnemiesPlugin,
             settings::plugins::VendorPlugin,
             PhysicsPlugins::default(), // avian3d

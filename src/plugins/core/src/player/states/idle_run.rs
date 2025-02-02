@@ -19,7 +19,7 @@ pub fn process_event(
     time: Res<Time>,
 ) {
     match event.event() {
-        PlayerEvent::Movement(event) => idle_run(event, &mut *transform, &time),
+        PlayerEvent::Movement(event) => idle_run(&event, &mut *transform, &time),
         PlayerEvent::Floaty(event) => {
             if event.active {
                 new_state!(commands, fsm, current_state, super::floaty::process_event);

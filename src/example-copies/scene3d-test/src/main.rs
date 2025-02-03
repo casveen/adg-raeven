@@ -130,8 +130,7 @@ fn setup(
     commands.spawn((
         Mesh3d(meshes.add(Cylinder::new(0.6, 2.0))),
         MeshMaterial3d(materials.add(Color::srgb(0.8, 0.1, 0.5))),
-        // Transform::from_xyz(-1.5, 1., 0.),
-        Transform::from_xyz(3., 1., 0.),
+        Transform::from_xyz(4., 1., 0.).with_rotation(Quat::from_xyzw(0., sin(0.5), 0., cos(0.5))),
         AntSpawner::new(2),
     ));
 }

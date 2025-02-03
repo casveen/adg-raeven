@@ -1,5 +1,3 @@
-use std::{any::Any, time::Duration};
-
 use avian3d::prelude::*;
 use bevy::prelude::*;
 
@@ -87,14 +85,13 @@ pub(super) fn spawn_ant(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let mut t = event.event().transform;
-    t.scale = Vec3::ONE * 1.1;
-    warn!("WHAT TRANSFORM IS WRONG??: {:?}", t);
+    let t = event.event().transform.with_scale(Vec3::ONE * 1.1);
     let new_ant = commands
         .spawn((
             Mesh3d(meshes.add(Cuboid::from_size(t.scale))),
             MeshMaterial3d(materials.add(Color::srgb_u8(190, 0, 180))),
-            t,
+            // transform is inherited from parent
+            Transform::default(),
             Collider::cuboid(t.scale.x, t.scale.y, t.scale.z),
             Ant,
             CollidingEntities::default(),
@@ -105,10 +102,15 @@ pub(super) fn spawn_ant(
 
 pub fn cordyceptmovement(
     event: Trigger<CordyCeptMovement>,
-    mut cordycepted_ants: Query<&mut Transform, With<Ant>>,
+    mut cordycepted_ants: Query<(&Parent, &mut Transform), With<Ant>>,
+    q_spawner: Query<&Transform, (With<AntSpawner>, Without<Ant>)>,
 ) {
-    for mut ant in cordycepted_ants.iter_mut() {
-        ant.translation += event.event().0;
+    let movement = event.0;
+    for (parent, mut ant) in cordycepted_ants.iter_mut() {
+        let Ok(spawner) = q_spawner.get(parent.get()) else {
+            continue;
+        };
+        ant.translation += spawner.rotation.inverse() * movement;
     }
 }
 

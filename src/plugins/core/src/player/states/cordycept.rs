@@ -31,7 +31,7 @@ pub fn process_event(
                 transform.translation += movement;
                 movement::rotate_player(motion, &mut *transform, ROTATION_SPEED, &time);
 
-                commands.trigger(CordyCeptMovement(movement));
+                commands.trigger(CordyCeptMovement(movement, transform.rotation));
             }
         }
         _ => (),
@@ -41,4 +41,4 @@ pub fn process_event(
 #[derive(Component)]
 pub struct CordyCeptedComponent;
 #[derive(Event)]
-pub struct CordyCeptMovement(pub Vec3);
+pub struct CordyCeptMovement(pub Vec3, pub Quat);

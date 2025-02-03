@@ -7,6 +7,21 @@ use crate::{
 
 use super::states;
 
+pub struct PlayerControllerPlugin;
+impl Plugin for PlayerControllerPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            Startup,
+            (
+                register_input,
+                //
+            ),
+        )
+        .add_systems(Update, process_input)
+        .add_observer(spawn_player);
+    }
+}
+
 enum PlayerState {
     NotSpawned,
     Dead,
@@ -58,7 +73,7 @@ static MOVEMENT: input_manager::Action = input_manager::Action("movement");
 static ABILITY_FLOATY: input_manager::Action = input_manager::Action("ability_floaty");
 static ABILITY_CORDYCEPT: input_manager::Action = input_manager::Action("ability_cordycept");
 
-pub(super) fn register_input(mut im: ResMut<input_manager::InputManager>) {
+fn register_input(mut im: ResMut<input_manager::InputManager>) {
     im.register_action_motion(
         MOVEMENT,
         vec![
@@ -97,11 +112,7 @@ pub(super) fn register_input(mut im: ResMut<input_manager::InputManager>) {
     );
 }
 
-pub(super) fn spawn_player(
-    player_spawn: Trigger<PlayerSpawn>,
-    query: Query<&Player>,
-    mut commands: Commands,
-) {
+fn spawn_player(player_spawn: Trigger<PlayerSpawn>, query: Query<&Player>, mut commands: Commands) {
     // lazy assertion
     if !query.is_empty() {
         unreachable!("Trying to spawn a new player entity. STOP!");
@@ -121,7 +132,7 @@ pub(super) fn spawn_player(
         .insert_children(0, &[fsm_entity]);
 }
 
-pub(super) fn process_input(
+fn process_input(
     im: Res<InputManager>,
     yaw: Res<CameraYaw>,
     mut commands: Commands,

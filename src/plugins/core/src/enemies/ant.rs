@@ -3,8 +3,27 @@ use bevy::prelude::*;
 
 use crate::{game_world::Wall, player::states::cordycept::CordyCeptMovement};
 
+pub struct AntPlugin;
+impl Plugin for AntPlugin {
+    fn build(&self, app: &mut bevy::app::App) {
+        app.register_type::<AntRespawnTimer>()
+            .add_systems(
+                Update,
+                (
+                    wall_collision,
+                    spawner_evaluate_spawning,
+                    tick_spawn_timers,
+                    respawn_timer.run_if(respawn_timer_run_if),
+                ),
+            )
+            .add_observer(spawn_ant)
+            .add_observer(kill_ant)
+            .add_observer(cordyceptmovement);
+    }
+}
+
 #[derive(Component)]
-pub struct Ant;
+struct Ant;
 
 #[derive(Component)]
 pub struct AntSpawner {
@@ -32,19 +51,19 @@ impl AntSpawner {
 }
 
 #[derive(Component, Reflect)]
-pub(super) struct AntRespawnTimer {
+struct AntRespawnTimer {
     timer: Timer,
 }
 
 #[derive(Event)]
-pub(super) struct SpawnAnt {
-    pub transform: Transform,
+struct SpawnAnt {
+    transform: Transform,
 }
 
 #[derive(Event)]
-pub struct KillAnt;
+struct KillAnt;
 
-pub(super) fn spawner_evaluate_spawning(
+fn spawner_evaluate_spawning(
     mut query: Query<(Entity, &mut AntSpawner), Without<AntRespawnTimer>>,
     mut commands: Commands,
 ) {
@@ -56,17 +75,17 @@ pub(super) fn spawner_evaluate_spawning(
     }
 }
 
-pub(super) fn tick_spawn_timers(mut query: Query<&mut AntRespawnTimer>, time: Res<Time>) {
+fn tick_spawn_timers(mut query: Query<&mut AntRespawnTimer>, time: Res<Time>) {
     for mut timer in query.iter_mut() {
         timer.timer.tick(time.delta());
     }
 }
 
-pub(super) fn respawn_timer_run_if(query: Query<(), With<AntRespawnTimer>>) -> bool {
+fn respawn_timer_run_if(query: Query<(), With<AntRespawnTimer>>) -> bool {
     !query.is_empty()
 }
 
-pub(super) fn respawn_timer(
+fn respawn_timer(
     query: Query<(Entity, &Transform, &AntRespawnTimer)>,
     mut commands: Commands,
 ) {
@@ -79,7 +98,7 @@ pub(super) fn respawn_timer(
     }
 }
 
-pub(super) fn spawn_ant(
+fn spawn_ant(
     event: Trigger<SpawnAnt>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -100,7 +119,7 @@ pub(super) fn spawn_ant(
     commands.entity(event.entity()).add_child(new_ant);
 }
 
-pub fn cordyceptmovement(
+fn cordyceptmovement(
     event: Trigger<CordyCeptMovement>,
     mut cordycepted_ants: Query<(&Parent, &mut Transform), With<Ant>>,
     q_spawner: Query<&Transform, (With<AntSpawner>, Without<Ant>)>,
@@ -114,10 +133,7 @@ pub fn cordyceptmovement(
     }
 }
 
-#[derive(Default, Reflect, GizmoConfigGroup)]
-pub struct CollisionGizmo;
-
-pub fn wall_collision(
+fn wall_collision(
     ant_query: Query<(Entity, &CollidingEntities), With<Ant>>,
     wall_query: Query<Entity, With<Wall>>,
     mut commands: Commands,
@@ -132,7 +148,7 @@ pub fn wall_collision(
     }
 }
 
-pub(super) fn kill_ant(
+fn kill_ant(
     event: Trigger<KillAnt>,
     q_parent: Query<&Parent>,
     mut q_spawners: Query<&mut AntSpawner>,

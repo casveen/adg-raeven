@@ -3,7 +3,7 @@ use bevy::math::ops::{cos, sin};
 use bevy::{picking::pointer::PointerInteraction, prelude::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
-use core::enemies::ant::AntSpawner;
+use core::enemies::ant::{AntHillEntry, AntHillPipe, AntSpawner};
 use core::game_world::{Ground, Wall};
 use core::input::input_manager::{
     button, motion, Action, InputManager, InputModeChanged, InputType,
@@ -130,9 +130,40 @@ fn setup(
     commands.spawn((
         Mesh3d(meshes.add(Cylinder::new(0.6, 2.0))),
         MeshMaterial3d(materials.add(Color::srgb(0.8, 0.1, 0.5))),
-        Transform::from_xyz(4., 1., 0.).with_rotation(Quat::from_xyzw(0., sin(0.5), 0., cos(0.5))),
-        AntSpawner::new(2),
+        // Transform::from_xyz(4., 1., 0.).with_rotation(Quat::from_xyzw(0., sin(0.5), 0., cos(0.5))),
+        Transform::from_xyz(4., 1., 0.),
+        AntSpawner::new(1),
     ));
+
+    // ant hill
+    let entry_one = commands.spawn(()).id();
+    let entry_two = commands.spawn(()).id();
+
+    let hill_color = Color::srgb(1., 1., 0.);
+    let hill_size = 0.6;
+    commands.entity(entry_one).insert((
+        Mesh3d(meshes.add(Cuboid::new(hill_size, hill_size, hill_size))),
+        MeshMaterial3d(materials.add(hill_color)),
+        Transform::from_xyz(-2., 1., -1.).with_rotation(Quat::from_xyzw(0., sin(-1.), 0., cos(-1.))),
+        AntHillEntry {
+            other_entry: entry_two,
+        },
+        Collider::sphere(hill_size),
+        RigidBody::Static,
+    ));
+    commands.entity(entry_two).insert((
+        Mesh3d(meshes.add(Cuboid::new(hill_size, hill_size, hill_size))),
+        MeshMaterial3d(materials.add(hill_color)),
+        Transform::from_xyz(2., 1., 1.).with_rotation(Quat::from_xyzw(0., sin(1.), 0., cos(1.))),
+        AntHillEntry {
+            other_entry: entry_one,
+        },
+        Collider::sphere(hill_size),
+        RigidBody::Static,
+    ));
+    commands
+        .spawn(AntHillPipe)
+        .add_children(&[entry_one, entry_two]);
 }
 
 pub fn setup_walls(

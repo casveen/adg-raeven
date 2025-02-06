@@ -11,14 +11,18 @@ impl Plugin for AntPlugin {
                 Update,
                 (
                     wall_collision,
+                    anthill_entry_collision,
                     spawner_evaluate_spawning,
                     tick_spawn_timers,
+                    recent_movement_in_anthill_cooldown_timer
+                        .run_if(recent_movement_in_anthill_cooldown_timer_run_if),
                     respawn_timer.run_if(respawn_timer_run_if),
                 ),
             )
             .add_observer(spawn_ant)
             .add_observer(kill_ant)
-            .add_observer(cordyceptmovement);
+            .add_observer(cordyceptmovement)
+            .add_observer(teleport_ant);
     }
 }
 
@@ -85,10 +89,7 @@ fn respawn_timer_run_if(query: Query<(), With<AntRespawnTimer>>) -> bool {
     !query.is_empty()
 }
 
-fn respawn_timer(
-    query: Query<(Entity, &Transform, &AntRespawnTimer)>,
-    mut commands: Commands,
-) {
+fn respawn_timer(query: Query<(Entity, &Transform, &AntRespawnTimer)>, mut commands: Commands) {
     for (entity, transform, _) in query.iter().filter(|(_, _, t)| t.timer.finished()) {
         commands.entity(entity).remove::<AntRespawnTimer>();
 
@@ -104,7 +105,7 @@ fn spawn_ant(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let t = event.event().transform.with_scale(Vec3::ONE * 1.1);
+    let t = event.event().transform.with_scale(Vec3::ONE * 0.6);
     let new_ant = commands
         .spawn((
             Mesh3d(meshes.add(Cuboid::from_size(t.scale))),
@@ -135,7 +136,7 @@ fn cordyceptmovement(
 
 fn wall_collision(
     ant_query: Query<(Entity, &CollidingEntities), With<Ant>>,
-    wall_query: Query<Entity, With<Wall>>,
+    wall_query: Query<(), With<Wall>>,
     mut commands: Commands,
 ) {
     for (entity, colliding_entities) in &ant_query {
@@ -162,4 +163,83 @@ fn kill_ant(
     };
     spawner.decrement();
     commands.entity(event.entity()).remove_parent().despawn();
+}
+
+// Composed of two entries
+#[derive(Component)]
+#[require(Transform)]
+pub struct AntHillPipe;
+#[derive(Component)]
+#[require(Transform)]
+pub struct AntHillEntry {
+    pub other_entry: Entity,
+}
+#[derive(Event)]
+struct AntHillMovement {
+    hill_entry_global_transform: GlobalTransform,
+}
+#[derive(Component)]
+struct RecentMovementInAntHill {
+    cooldown_timer: Timer,
+}
+impl Default for RecentMovementInAntHill {
+    fn default() -> Self {
+        Self {
+            cooldown_timer: Timer::from_seconds(2., TimerMode::Once),
+        }
+    }
+}
+
+fn recent_movement_in_anthill_cooldown_timer_run_if(q: Query<&RecentMovementInAntHill>) -> bool {
+    !q.is_empty()
+}
+
+fn recent_movement_in_anthill_cooldown_timer(
+    mut timers: Query<(Entity, &mut RecentMovementInAntHill)>,
+    time: Res<Time>,
+    mut commands: Commands,
+) {
+    for (entity, mut timer) in timers.iter_mut() {
+        timer.cooldown_timer.tick(time.delta());
+        if timer.cooldown_timer.finished() {
+            commands.entity(entity).remove::<RecentMovementInAntHill>();
+        }
+    }
+}
+
+fn anthill_entry_collision(
+    ant_query: Query<(Entity, &CollidingEntities), (With<Ant>, Without<RecentMovementInAntHill>)>,
+    hill_query: Query<(Entity, &GlobalTransform, &AntHillEntry), With<AntHillEntry>>,
+    mut commands: Commands,
+) {
+    for (entity, colliding_entities) in &ant_query {
+        for colliding_entity in colliding_entities.iter() {
+            let Ok((_, _, hill_entry)) = hill_query.get(*colliding_entity) else {
+                continue;
+            };
+            let Ok((_, other_hill_transform, _)) = hill_query.get(hill_entry.other_entry) else {
+                continue;
+            };
+
+            commands
+                .entity(entity)
+                .insert(RecentMovementInAntHill::default())
+                .trigger(AntHillMovement {
+                    hill_entry_global_transform: *other_hill_transform,
+                });
+        }
+    }
+}
+
+fn teleport_ant(
+    movement: Trigger<AntHillMovement>,
+    mut query: Query<(&mut Transform, &Parent), With<RecentMovementInAntHill>>,
+    q_parents: Query<&Transform, (With<AntSpawner>, Without<RecentMovementInAntHill>)>,
+) {
+    let (mut ant_transform, parent) = query.get_mut(movement.entity()).unwrap();
+    let spawner_transform = q_parents.get(parent.get()).unwrap();
+    let entry_transform = movement.event().hill_entry_global_transform;
+
+    ant_transform.translation = entry_transform.translation() - spawner_transform.translation;
+    ant_transform.rotation = entry_transform.rotation() * spawner_transform.rotation.conjugate();
 }

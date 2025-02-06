@@ -144,7 +144,12 @@ fn setup(
     commands.entity(entry_one).insert((
         Mesh3d(meshes.add(Cuboid::new(hill_size, hill_size, hill_size))),
         MeshMaterial3d(materials.add(hill_color)),
-        Transform::from_xyz(-2., 1., -1.).with_rotation(Quat::from_xyzw(0., sin(-1.), 0., cos(-1.))),
+        Transform::from_xyz(-2., 1., -1.).with_rotation(Quat::from_xyzw(
+            0.,
+            sin(-1.),
+            0.,
+            cos(-1.),
+        )),
         AntHillEntry {
             other_entry: entry_two,
         },
@@ -162,7 +167,10 @@ fn setup(
         RigidBody::Static,
     ));
     commands
-        .spawn(AntHillPipe)
+        .spawn((
+            AntHillPipe,
+            InheritedVisibility::VISIBLE, /* bevy error b0004 */
+        ))
         .add_children(&[entry_one, entry_two]);
 }
 

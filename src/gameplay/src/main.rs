@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use blenvy::{BlenvyPlugin, BlueprintInfo, GameWorldTag, HideUntilReady, SpawnBlueprint};
 
 mod mushroom;
@@ -29,9 +30,9 @@ fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins.set(AssetPlugin::default()),
-            // our custom plugins
-            MushroomPlugin, // Showcases different type of components /structs
             BlenvyPlugin::default(),
+            WorldInspectorPlugin::new(),
+            MushroomPlugin
         ))
         //.register_type::<Player>()
         .add_systems(Startup, setup_game)

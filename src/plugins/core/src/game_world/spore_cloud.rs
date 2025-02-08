@@ -1,15 +1,17 @@
-use bevy::prelude::*;
 use avian3d::prelude::*;
+use bevy::prelude::*;
 
 pub struct SporeCloudPlugin;
 impl Plugin for SporeCloudPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, tick_spore_cloud).add_observer(spawn_spore_cloud);
+        app.add_systems(Update, tick_spore_cloud)
+            .add_observer(spawn_spore_cloud);
     }
 }
 
-const LIFETIME:f32 = 1.0;
-const SIZE: Vec3 = Vec3::new(1.0, 1.0, 1.0);
+const LIFETIME: f32 = 5.0;
+// const SIZE: Vec3 = Vec3::new(1.0, 1.0, 1.0);
+const SIZE: f32 = 2.0;
 
 #[derive(Component)]
 pub struct SporeCloud(Timer);
@@ -33,7 +35,7 @@ fn tick_spore_cloud(
 }
 
 #[derive(Event)]
-pub struct SpawnSporeCloud(pub GlobalTransform);
+pub struct SpawnSporeCloud(pub Transform);
 
 fn spawn_spore_cloud(
     trigger: Trigger<SpawnSporeCloud>,
@@ -43,12 +45,11 @@ fn spawn_spore_cloud(
 ) {
     commands.spawn((
         SporeCloud::default(),
-        trigger.event().0.compute_transform(),
+        trigger.event().0,
         RigidBody::Static,
-        Collider::cuboid(SIZE.x, SIZE.y, SIZE.z),
+        Collider::cuboid(SIZE, SIZE, SIZE),
         // CollidingEntities::default(),
-        Mesh3d(meshes.add(Cuboid::from_size(SIZE))),
+        Mesh3d(meshes.add(Cuboid::from_size(Vec3::ONE * SIZE))),
         MeshMaterial3d(materials.add(Color::srgb(0.1, 0.9, 0.7))),
     ));
 }
-

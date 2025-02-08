@@ -4,6 +4,7 @@ use bevy::{picking::pointer::PointerInteraction, prelude::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 use core::enemies::ant::{AntHillEntry, AntHillPipe, AntSpawner};
+use core::game_world::spore_cloud::SpawnSporeCloud;
 use core::game_world::{Ground, Wall};
 use core::input::input_manager::{
     button, motion, Action, InputManager, InputModeChanged, InputType,
@@ -19,7 +20,7 @@ fn main() {
             WorldInspectorPlugin::new(),
         ))
         .add_systems(Startup, (setup, setup_walls, register_input))
-        .add_systems(Update, draw_cursor)
+        .add_systems(Update, (draw_cursor, read_input))
         .add_observer(get_input_mode_change_trigger)
         .run();
 }
@@ -28,6 +29,8 @@ static ACTIVATE: Action = Action("activate");
 static SPAWN_SHROOM: Action = Action("spawn_shroom");
 static MOVEMENT: Action = Action("movement");
 static CAMERA: Action = Action("camera");
+
+static SPAWN_SPORE_CLOUD: Action = Action("spawn_spore_cloud");
 
 fn register_input(mut im: ResMut<InputManager>) {
     im.register_action_button(
@@ -42,6 +45,13 @@ fn register_input(mut im: ResMut<InputManager>) {
         SPAWN_SHROOM,
         vec![
             button::Variant::Keyboard(KeyCode::Space),
+            button::Variant::Gamepad(GamepadButton::North),
+        ],
+    );
+    im.register_action_button(
+        SPAWN_SPORE_CLOUD,
+        vec![
+            button::Variant::Keyboard(KeyCode::KeyV),
             button::Variant::Gamepad(GamepadButton::North),
         ],
     );
@@ -93,6 +103,13 @@ fn register_input(mut im: ResMut<InputManager>) {
             },
         ],
     );
+}
+
+fn read_input(im: Res<InputManager>, mut commands: Commands) {
+    if im.is_action_just_pressed(SPAWN_SPORE_CLOUD) {
+        debug!("test spawn spore_cloud");
+        commands.trigger(SpawnSporeCloud(Transform::from_xyz(4., 1., 1.)));
+    }
 }
 
 fn get_input_mode_change_trigger(trigger: Trigger<InputModeChanged>) {

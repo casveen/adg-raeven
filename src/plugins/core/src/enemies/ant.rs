@@ -2,7 +2,10 @@ use avian3d::prelude::*;
 use bevy::prelude::*;
 
 use crate::{
-    game_world::{spore_cloud::SpawnSporeCloud, Wall},
+    game_world::{
+        spore_cloud::{SpawnSporeCloud, SporeCloud},
+        Wall,
+    },
     player::states::cordycept::{CordyCeptMovement, CordyCeptedComponent},
 };
 
@@ -14,6 +17,7 @@ impl Plugin for AntPlugin {
                 Update,
                 (
                     wall_collision,
+                    spore_cloud_collision,
                     anthill_entry_collision,
                     spawner_evaluate_spawning,
                     tick_spawn_timers,
@@ -108,7 +112,7 @@ fn spawn_ant(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let t = event.event().transform.with_scale(Vec3::ONE * 0.6);
+    let t = event.event().transform.with_scale(Vec3::ONE * 1.6);
     let new_ant = commands
         .spawn((
             Mesh3d(meshes.add(Cuboid::from_size(t.scale))),
@@ -118,7 +122,7 @@ fn spawn_ant(
             Collider::cuboid(t.scale.x, t.scale.y, t.scale.z),
             Ant,
             CollidingEntities::default(),
-            CordyCeptedComponent, // todo: only add on collision with spore_cloud
+            // CordyCeptedComponent, // todo: only add on collision with spore_cloud
         ))
         .id();
     commands.entity(event.entity()).add_child(new_ant);
@@ -153,6 +157,25 @@ fn wall_collision(
     }
 }
 
+fn spore_cloud_collision(
+    q_ant: Query<(Entity, &CollidingEntities), (With<Ant>, Without<CordyCeptedComponent>)>,
+    q_spore_cloud: Query<Entity, With<SporeCloud>>,
+    mut commands: Commands,
+) {
+    for (entity, colliding_entities) in &q_ant {
+        for colliding_entity in colliding_entities.iter() {
+            if let Ok(spore_cloud) = q_spore_cloud.get(*colliding_entity) {
+                debug!(
+                    "ant spore_cloud collision: {}, {:?}",
+                    entity, spore_cloud
+                );
+                commands.entity(entity).insert(CordyCeptedComponent);
+                commands.entity(spore_cloud).despawn();
+            }
+        }
+    }
+}
+
 fn kill_ant(
     event: Trigger<KillAnt>,
     q_parent: Query<(&Parent, &GlobalTransform)>,
@@ -169,7 +192,7 @@ fn kill_ant(
 
     if let Ok(_) = q_cordycepted.get(event.entity()) {
         info!("spawn spore cloud");
-        commands.trigger(SpawnSporeCloud(*global_transform));
+        commands.trigger(SpawnSporeCloud(global_transform.compute_transform()));
     }
 
     // destroy ant

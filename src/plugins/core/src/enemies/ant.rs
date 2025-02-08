@@ -1,7 +1,10 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
 
-use crate::{game_world::Wall, player::states::cordycept::CordyCeptMovement};
+use crate::{
+    game_world::{spore_cloud::SpawnSporeCloud, Wall},
+    player::states::cordycept::{CordyCeptMovement, CordyCeptedComponent},
+};
 
 pub struct AntPlugin;
 impl Plugin for AntPlugin {
@@ -115,6 +118,7 @@ fn spawn_ant(
             Collider::cuboid(t.scale.x, t.scale.y, t.scale.z),
             Ant,
             CollidingEntities::default(),
+            CordyCeptedComponent, // todo: only add on collision with spore_cloud
         ))
         .id();
     commands.entity(event.entity()).add_child(new_ant);
@@ -122,7 +126,7 @@ fn spawn_ant(
 
 fn cordyceptmovement(
     event: Trigger<CordyCeptMovement>,
-    mut cordycepted_ants: Query<(&Parent, &mut Transform), With<Ant>>,
+    mut cordycepted_ants: Query<(&Parent, &mut Transform), (With<Ant>, With<CordyCeptedComponent>)>,
     q_spawner: Query<&Transform, (With<AntSpawner>, Without<Ant>)>,
 ) {
     let movement = event.0;
@@ -151,16 +155,24 @@ fn wall_collision(
 
 fn kill_ant(
     event: Trigger<KillAnt>,
-    q_parent: Query<&Parent>,
+    q_parent: Query<(&Parent, &GlobalTransform)>,
+    q_cordycepted: Query<&CordyCeptedComponent>,
     mut q_spawners: Query<&mut AntSpawner>,
     mut commands: Commands,
 ) {
-    let Ok(parent) = q_parent.get(event.entity()) else {
+    let Ok((parent, global_transform)) = q_parent.get(event.entity()) else {
         return;
     };
     let Ok(mut spawner) = q_spawners.get_mut(parent.get()) else {
         return;
     };
+
+    if let Ok(_) = q_cordycepted.get(event.entity()) {
+        info!("spawn spore cloud");
+        commands.trigger(SpawnSporeCloud(*global_transform));
+    }
+
+    // destroy ant
     spawner.decrement();
     commands.entity(event.entity()).remove_parent().despawn();
 }

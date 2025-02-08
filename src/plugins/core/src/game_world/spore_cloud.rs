@@ -10,7 +10,6 @@ impl Plugin for SporeCloudPlugin {
 }
 
 const LIFETIME: f32 = 5.0;
-// const SIZE: Vec3 = Vec3::new(1.0, 1.0, 1.0);
 const SIZE: f32 = 2.0;
 
 #[derive(Component)]
@@ -47,8 +46,7 @@ fn spawn_spore_cloud(
         SporeCloud::default(),
         trigger.event().0,
         RigidBody::Static,
-        Collider::cuboid(SIZE, SIZE, SIZE),
-        // CollidingEntities::default(),
+        Collider::cuboid(SIZE, SIZE, SIZE), // should be sphere?
         Mesh3d(meshes.add(Cuboid::from_size(Vec3::ONE * SIZE))),
         MeshMaterial3d(materials.add(Color::srgb(0.1, 0.9, 0.7))),
     ));

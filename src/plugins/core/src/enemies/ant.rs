@@ -122,7 +122,6 @@ fn spawn_ant(
             Collider::cuboid(t.scale.x, t.scale.y, t.scale.z),
             Ant,
             CollidingEntities::default(),
-            // CordyCeptedComponent, // todo: only add on collision with spore_cloud
         ))
         .id();
     commands.entity(event.entity()).add_child(new_ant);

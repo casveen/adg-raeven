@@ -4151,6 +4151,135 @@
       "type": "object",
       "typeInfo": "Value"
     },
+    "bevy_egui::EguiContextSettings": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "bevy_egui::EguiContextSettings",
+      "properties": {
+        "capture_pointer_input": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "input_system_settings": {
+          "type": {
+            "$ref": "#/$defs/bevy_egui::EguiInputSystemSettings"
+          }
+        },
+        "run_manually": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "scale_factor": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        }
+      },
+      "required": [
+        "run_manually",
+        "scale_factor",
+        "capture_pointer_input",
+        "input_system_settings"
+      ],
+      "short_name": "EguiContextSettings",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "bevy_egui::EguiGlobalSettings": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "bevy_egui::EguiGlobalSettings",
+      "properties": {
+        "enable_focused_non_window_context_updates": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "input_system_settings": {
+          "type": {
+            "$ref": "#/$defs/bevy_egui::EguiInputSystemSettings"
+          }
+        }
+      },
+      "required": [
+        "enable_focused_non_window_context_updates",
+        "input_system_settings"
+      ],
+      "short_name": "EguiGlobalSettings",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "bevy_egui::EguiInputSystemSettings": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "bevy_egui::EguiInputSystemSettings",
+      "properties": {
+        "run_write_ime_events_system": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "run_write_keyboard_input_events_system": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "run_write_modifiers_keys_state_system": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "run_write_mouse_wheel_events_system": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "run_write_non_window_pointer_moved_events_system": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "run_write_non_window_touch_events_system": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "run_write_pointer_button_events_system": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "run_write_window_pointer_moved_events_system": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "run_write_window_touch_events_system": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        }
+      },
+      "required": [
+        "run_write_modifiers_keys_state_system",
+        "run_write_window_pointer_moved_events_system",
+        "run_write_pointer_button_events_system",
+        "run_write_window_touch_events_system",
+        "run_write_non_window_pointer_moved_events_system",
+        "run_write_mouse_wheel_events_system",
+        "run_write_non_window_touch_events_system",
+        "run_write_keyboard_input_events_system",
+        "run_write_ime_events_system"
+      ],
+      "short_name": "EguiInputSystemSettings",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
     "bevy_gizmos::aabb::AabbGizmoConfigGroup": {
       "additionalProperties": false,
       "isComponent": false,
@@ -15479,11 +15608,35 @@
       "type": "object",
       "typeInfo": "Value"
     },
+    "core::ops::Range<f64>": {
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "core::ops::Range<f64>",
+      "short_name": "Range<f64>",
+      "type": "object",
+      "typeInfo": "Value"
+    },
     "core::ops::Range<u32>": {
       "isComponent": false,
       "isResource": false,
       "long_name": "core::ops::Range<u32>",
       "short_name": "Range<u32>",
+      "type": "object",
+      "typeInfo": "Value"
+    },
+    "core::ops::RangeInclusive<f32>": {
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "core::ops::RangeInclusive<f32>",
+      "short_name": "RangeInclusive<f32>",
+      "type": "object",
+      "typeInfo": "Value"
+    },
+    "core::ops::RangeInclusive<f64>": {
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "core::ops::RangeInclusive<f64>",
+      "short_name": "RangeInclusive<f64>",
       "type": "object",
       "typeInfo": "Value"
     },
@@ -16346,7 +16499,31 @@
       "isResource": false,
       "long_name": "gameplay::mushroom::Bloomable",
       "properties": {
+        "to_bloom": {
+          "type": {
+            "$ref": "#/$defs/gameplay::mushroom::MushroomToBloom"
+          }
+        }
+      },
+      "required": [
+        "to_bloom"
+      ],
+      "short_name": "Bloomable",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "gameplay::mushroom::Blooms": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "long_name": "gameplay::mushroom::Blooms",
+      "properties": {
         "bloom_tween": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        },
+        "bloom_value": {
           "type": {
             "$ref": "#/$defs/f32"
           }
@@ -16355,21 +16532,28 @@
           "type": {
             "$ref": "#/$defs/bool"
           }
-        },
-        "to_bloom": {
-          "type": {
-            "$ref": "#/$defs/alloc::string::String"
-          }
         }
       },
       "required": [
         "bloomed",
-        "bloom_tween",
-        "to_bloom"
+        "bloom_value",
+        "bloom_tween"
       ],
-      "short_name": "Bloomable",
+      "short_name": "Blooms",
       "type": "object",
       "typeInfo": "Struct"
+    },
+    "gameplay::mushroom::MushroomToBloom": {
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "gameplay::mushroom::MushroomToBloom",
+      "oneOf": [
+        "Amanita",
+        "Inkcap"
+      ],
+      "short_name": "MushroomToBloom",
+      "type": "string",
+      "typeInfo": "Enum"
     },
     "glam::Affine2": {
       "additionalProperties": false,
@@ -16421,6 +16605,295 @@
       "type": "object",
       "typeInfo": "Struct"
     },
+    "glam::BVec2": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::BVec2",
+      "properties": {
+        "x": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "y": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "short_name": "BVec2",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "glam::BVec3": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::BVec3",
+      "properties": {
+        "x": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "y": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "z": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "short_name": "BVec3",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "glam::BVec3A": {
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::BVec3A",
+      "short_name": "BVec3A",
+      "type": "object",
+      "typeInfo": "Value"
+    },
+    "glam::BVec4": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::BVec4",
+      "properties": {
+        "w": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "x": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "y": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "z": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z",
+        "w"
+      ],
+      "short_name": "BVec4",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "glam::BVec4A": {
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::BVec4A",
+      "short_name": "BVec4A",
+      "type": "object",
+      "typeInfo": "Value"
+    },
+    "glam::DAffine2": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::DAffine2",
+      "properties": {
+        "matrix2": {
+          "type": {
+            "$ref": "#/$defs/glam::DMat2"
+          }
+        },
+        "translation": {
+          "type": {
+            "$ref": "#/$defs/glam::DVec2"
+          }
+        }
+      },
+      "required": [
+        "matrix2",
+        "translation"
+      ],
+      "short_name": "DAffine2",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "glam::DAffine3": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::DAffine3",
+      "properties": {
+        "matrix3": {
+          "type": {
+            "$ref": "#/$defs/glam::DMat3"
+          }
+        },
+        "translation": {
+          "type": {
+            "$ref": "#/$defs/glam::DVec3"
+          }
+        }
+      },
+      "required": [
+        "matrix3",
+        "translation"
+      ],
+      "short_name": "DAffine3",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "glam::DMat2": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::DMat2",
+      "properties": {
+        "x_axis": {
+          "type": {
+            "$ref": "#/$defs/glam::DVec2"
+          }
+        },
+        "y_axis": {
+          "type": {
+            "$ref": "#/$defs/glam::DVec2"
+          }
+        }
+      },
+      "required": [
+        "x_axis",
+        "y_axis"
+      ],
+      "short_name": "DMat2",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "glam::DMat3": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::DMat3",
+      "properties": {
+        "x_axis": {
+          "type": {
+            "$ref": "#/$defs/glam::DVec3"
+          }
+        },
+        "y_axis": {
+          "type": {
+            "$ref": "#/$defs/glam::DVec3"
+          }
+        },
+        "z_axis": {
+          "type": {
+            "$ref": "#/$defs/glam::DVec3"
+          }
+        }
+      },
+      "required": [
+        "x_axis",
+        "y_axis",
+        "z_axis"
+      ],
+      "short_name": "DMat3",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "glam::DMat4": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::DMat4",
+      "properties": {
+        "w_axis": {
+          "type": {
+            "$ref": "#/$defs/glam::DVec4"
+          }
+        },
+        "x_axis": {
+          "type": {
+            "$ref": "#/$defs/glam::DVec4"
+          }
+        },
+        "y_axis": {
+          "type": {
+            "$ref": "#/$defs/glam::DVec4"
+          }
+        },
+        "z_axis": {
+          "type": {
+            "$ref": "#/$defs/glam::DVec4"
+          }
+        }
+      },
+      "required": [
+        "x_axis",
+        "y_axis",
+        "z_axis",
+        "w_axis"
+      ],
+      "short_name": "DMat4",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "glam::DQuat": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::DQuat",
+      "properties": {
+        "w": {
+          "type": {
+            "$ref": "#/$defs/f64"
+          }
+        },
+        "x": {
+          "type": {
+            "$ref": "#/$defs/f64"
+          }
+        },
+        "y": {
+          "type": {
+            "$ref": "#/$defs/f64"
+          }
+        },
+        "z": {
+          "type": {
+            "$ref": "#/$defs/f64"
+          }
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z",
+        "w"
+      ],
+      "short_name": "DQuat",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
     "glam::DVec2": {
       "additionalProperties": false,
       "isComponent": false,
@@ -16443,6 +16916,74 @@
         "y"
       ],
       "short_name": "DVec2",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "glam::DVec3": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::DVec3",
+      "properties": {
+        "x": {
+          "type": {
+            "$ref": "#/$defs/f64"
+          }
+        },
+        "y": {
+          "type": {
+            "$ref": "#/$defs/f64"
+          }
+        },
+        "z": {
+          "type": {
+            "$ref": "#/$defs/f64"
+          }
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "short_name": "DVec3",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "glam::DVec4": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::DVec4",
+      "properties": {
+        "w": {
+          "type": {
+            "$ref": "#/$defs/f64"
+          }
+        },
+        "x": {
+          "type": {
+            "$ref": "#/$defs/f64"
+          }
+        },
+        "y": {
+          "type": {
+            "$ref": "#/$defs/f64"
+          }
+        },
+        "z": {
+          "type": {
+            "$ref": "#/$defs/f64"
+          }
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z",
+        "w"
+      ],
+      "short_name": "DVec4",
       "type": "object",
       "typeInfo": "Struct"
     },
@@ -16471,6 +17012,74 @@
       "type": "object",
       "typeInfo": "Struct"
     },
+    "glam::IVec3": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::IVec3",
+      "properties": {
+        "x": {
+          "type": {
+            "$ref": "#/$defs/i32"
+          }
+        },
+        "y": {
+          "type": {
+            "$ref": "#/$defs/i32"
+          }
+        },
+        "z": {
+          "type": {
+            "$ref": "#/$defs/i32"
+          }
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "short_name": "IVec3",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "glam::IVec4": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::IVec4",
+      "properties": {
+        "w": {
+          "type": {
+            "$ref": "#/$defs/i32"
+          }
+        },
+        "x": {
+          "type": {
+            "$ref": "#/$defs/i32"
+          }
+        },
+        "y": {
+          "type": {
+            "$ref": "#/$defs/i32"
+          }
+        },
+        "z": {
+          "type": {
+            "$ref": "#/$defs/i32"
+          }
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z",
+        "w"
+      ],
+      "short_name": "IVec4",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
     "glam::Mat2": {
       "additionalProperties": false,
       "isComponent": false,
@@ -16493,6 +17102,37 @@
         "y_axis"
       ],
       "short_name": "Mat2",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "glam::Mat3": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::Mat3",
+      "properties": {
+        "x_axis": {
+          "type": {
+            "$ref": "#/$defs/glam::Vec3"
+          }
+        },
+        "y_axis": {
+          "type": {
+            "$ref": "#/$defs/glam::Vec3"
+          }
+        },
+        "z_axis": {
+          "type": {
+            "$ref": "#/$defs/glam::Vec3"
+          }
+        }
+      },
+      "required": [
+        "x_axis",
+        "y_axis",
+        "z_axis"
+      ],
+      "short_name": "Mat3",
       "type": "object",
       "typeInfo": "Struct"
     },
@@ -16654,6 +17294,43 @@
         "z"
       ],
       "short_name": "UVec3",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "glam::UVec4": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "glam::UVec4",
+      "properties": {
+        "w": {
+          "type": {
+            "$ref": "#/$defs/u32"
+          }
+        },
+        "x": {
+          "type": {
+            "$ref": "#/$defs/u32"
+          }
+        },
+        "y": {
+          "type": {
+            "$ref": "#/$defs/u32"
+          }
+        },
+        "z": {
+          "type": {
+            "$ref": "#/$defs/u32"
+          }
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z",
+        "w"
+      ],
+      "short_name": "UVec4",
       "type": "object",
       "typeInfo": "Struct"
     },

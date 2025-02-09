@@ -1,5 +1,6 @@
 (
   assets:
    [ 
+    ("boxy", File ( path: "models/boxy.glb" )),
    ]
 )

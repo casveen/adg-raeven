@@ -314,7 +314,7 @@ impl AntRutineCollection {
         for (i, child) in children.iter().enumerate() {
             if *child == current {
                 let c = *children.get((i + 1) % children.len()).unwrap();
-                info!("child {:?}", c);
+                info!("child {} {:?}", (i + 1) % children.len(), c);
                 return c;
             }
         }
@@ -397,6 +397,7 @@ fn ant_rutine(
                 let (children, collection) =
                     q_rutine_collections.get(ant_rutine.collection).unwrap();
                 let new_point = collection.get_next_point(ant_rutine.current_point, children);
+                ant_rutine.current_point = new_point;
                 ant_rutine.action = AntRutineAction::Move(new_point);
             }
         }

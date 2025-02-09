@@ -1,7 +1,7 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
 
-pub struct SporeCloudPlugin;
+pub(super) struct SporeCloudPlugin;
 impl Plugin for SporeCloudPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, tick_spore_cloud)

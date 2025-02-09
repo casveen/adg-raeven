@@ -3,6 +3,7 @@ use bevy::prelude::*;
 
 use crate::{
     game_world::{
+        puffy_shrooms::PuffyShroomCollision,
         spore_cloud::{SpawnSporeCloud, SporeCloud},
         Wall,
     },
@@ -109,19 +110,22 @@ fn respawn_timer(query: Query<(Entity, &Transform, &AntRespawnTimer)>, mut comma
 fn spawn_ant(
     event: Trigger<SpawnAnt>,
     mut commands: Commands,
+    // tmp visuals
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let t = event.event().transform.with_scale(Vec3::ONE * 1.6);
     let new_ant = commands
         .spawn((
-            Mesh3d(meshes.add(Cuboid::from_size(t.scale))),
-            MeshMaterial3d(materials.add(Color::srgb_u8(190, 0, 180))),
+            Ant,
             // transform is inherited from parent
             Transform::default(),
             Collider::cuboid(t.scale.x, t.scale.y, t.scale.z),
-            Ant,
             CollidingEntities::default(),
+            PuffyShroomCollision, // todo, should be removed for cordycepted ant?
+            //
+            Mesh3d(meshes.add(Cuboid::from_size(t.scale))),
+            MeshMaterial3d(materials.add(Color::srgb_u8(190, 0, 180))),
         ))
         .id();
     commands.entity(event.entity()).add_child(new_ant);
@@ -164,10 +168,7 @@ fn spore_cloud_collision(
     for (entity, colliding_entities) in &q_ant {
         for colliding_entity in colliding_entities.iter() {
             if let Ok(spore_cloud) = q_spore_cloud.get(*colliding_entity) {
-                debug!(
-                    "ant spore_cloud collision: {}, {:?}",
-                    entity, spore_cloud
-                );
+                debug!("ant spore_cloud collision: {}, {:?}", entity, spore_cloud);
                 commands.entity(entity).insert(CordyCeptedComponent);
                 commands.entity(spore_cloud).despawn();
             }

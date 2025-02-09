@@ -4,6 +4,7 @@ use bevy::{picking::pointer::PointerInteraction, prelude::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 use core::enemies::ant::{AntHillEntry, AntHillPipe, AntSpawner};
+use core::game_world::puffy_shrooms::SpawnPuffyShroomOnEntity;
 use core::game_world::spore_cloud::SpawnSporeCloud;
 use core::game_world::{Ground, Wall};
 use core::input::input_manager::{
@@ -158,25 +159,29 @@ fn setup(
 
     let hill_color = Color::srgb(1., 1., 0.);
     let hill_size = 0.6;
+    let entry_one_transform = Transform::from_xyz(-2., 1., -1.).with_rotation(Quat::from_xyzw(
+        0.,
+        sin(-1.),
+        0.,
+        cos(-1.),
+    ));
+    let entry_two_transform =
+        Transform::from_xyz(2., 1., 1.).with_rotation(Quat::from_xyzw(0., sin(1.), 0., cos(1.)));
+
     commands.entity(entry_one).insert((
         Mesh3d(meshes.add(Cuboid::new(hill_size, hill_size, hill_size))),
         MeshMaterial3d(materials.add(hill_color)),
-        Transform::from_xyz(-2., 1., -1.).with_rotation(Quat::from_xyzw(
-            0.,
-            sin(-1.),
-            0.,
-            cos(-1.),
-        )),
+        entry_one_transform,
         AntHillEntry {
             other_entry: entry_two,
         },
         Collider::sphere(hill_size),
-        RigidBody::Static,
+        // RigidBody::Static,
     ));
     commands.entity(entry_two).insert((
         Mesh3d(meshes.add(Cuboid::new(hill_size, hill_size, hill_size))),
         MeshMaterial3d(materials.add(hill_color)),
-        Transform::from_xyz(2., 1., 1.).with_rotation(Quat::from_xyzw(0., sin(1.), 0., cos(1.))),
+        entry_two_transform,
         AntHillEntry {
             other_entry: entry_one,
         },
@@ -189,6 +194,9 @@ fn setup(
             InheritedVisibility::VISIBLE, /* bevy error b0004 */
         ))
         .add_children(&[entry_one, entry_two]);
+
+    // puffy shroom example
+    commands.trigger(SpawnPuffyShroomOnEntity(entry_two, entry_two_transform));
 }
 
 pub fn setup_walls(

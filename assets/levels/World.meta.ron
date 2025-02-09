@@ -1,0 +1,9 @@
+(
+  assets:
+   [ 
+    ("boxy", File ( path: "models/boxy.glb" )),
+    ("Tunnel_asset", File ( path: "blueprints/Tunnel_asset.glb" )),
+    ("Material.001", File ( path: "materials/Material.001.glb" )),
+    ("below_terrain_material", File ( path: "materials/below_terrain_material.glb" )),
+   ]
+)

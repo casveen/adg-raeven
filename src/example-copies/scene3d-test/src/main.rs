@@ -3,7 +3,9 @@ use bevy::math::ops::{cos, sin};
 use bevy::{picking::pointer::PointerInteraction, prelude::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
-use core::enemies::ant::{AntHillEntry, AntHillPipe, AntSpawner};
+use core::enemies::ant::{
+    AntHillEntry, AntHillPipe, AntRutineCollection, AntRutinePoint, AntSpawner,
+};
 use core::game_world::puffy_shrooms::SpawnPuffyShroomOnEntity;
 use core::game_world::spore_cloud::SpawnSporeCloud;
 use core::game_world::{Ground, Wall};
@@ -145,13 +147,24 @@ fn setup(
     ));
 
     // ant spawner
-    commands.spawn((
-        Mesh3d(meshes.add(Cylinder::new(0.6, 2.0))),
-        MeshMaterial3d(materials.add(Color::srgb(0.8, 0.1, 0.5))),
-        // Transform::from_xyz(4., 1., 0.).with_rotation(Quat::from_xyzw(0., sin(0.5), 0., cos(0.5))),
-        Transform::from_xyz(4., 1., 0.),
-        AntSpawner::new(1),
-    ));
+    let rutine_collection = commands
+        .spawn(AntRutineCollection)
+        .with_children(|parent| {
+            parent.spawn((AntRutinePoint, Transform::from_xyz(-4., 1., -3.)));
+            parent.spawn((AntRutinePoint, Transform::from_xyz(-4., 1., 2.)));
+            parent.spawn((AntRutinePoint, Transform::from_xyz(4., 1., 4.)));
+        })
+        .id();
+    commands
+        .spawn((
+            AntSpawner::new(1),
+            // Transform::from_xyz(4., 1., 0.).with_rotation(Quat::from_xyzw(0., sin(0.5), 0., cos(0.5))),
+            Transform::from_xyz(4., 1., 0.),
+            // 
+            Mesh3d(meshes.add(Cylinder::new(0.6, 2.0))),
+            MeshMaterial3d(materials.add(Color::srgb(0.8, 0.1, 0.5))),
+        ))
+        .add_child(rutine_collection);
 
     // ant hill
     let entry_one = commands.spawn(()).id();
@@ -207,12 +220,13 @@ pub fn setup_walls(
     let mut t = Transform::from_xyz(3.0, 1.0, 4.0);
     t.scale = Vec3::new(2.0, 1.0, 2.0);
     commands.spawn((
-        Mesh3d(meshes.add(Cuboid::from_size(t.scale))),
-        MeshMaterial3d(materials.add(Color::srgb_u8(190, 255, 220))),
+        Wall,
         t,
         Collider::cuboid(t.scale.x, t.scale.y, t.scale.z),
         RigidBody::Static,
-        Wall,
+        //
+        Mesh3d(meshes.add(Cuboid::from_size(t.scale))),
+        MeshMaterial3d(materials.add(Color::srgb_u8(190, 255, 220))),
     ));
 
     // test rigidbody

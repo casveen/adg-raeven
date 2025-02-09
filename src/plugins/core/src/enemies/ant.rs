@@ -108,7 +108,7 @@ fn respawn_timer(query: Query<(Entity, &Transform, &AntRespawnTimer)>, mut comma
 }
 
 fn spawn_ant(
-    event: Trigger<SpawnAnt>,
+    event: Trigger<SpawnAnt>, // TODO; add rutine here
     mut commands: Commands,
     // tmp visuals
     mut meshes: ResMut<Assets<Mesh>>,
@@ -277,4 +277,115 @@ fn teleport_ant(
 
     ant_transform.translation = entry_transform.translation() - spawner_transform.translation;
     ant_transform.rotation = entry_transform.rotation() * spawner_transform.rotation.conjugate();
+}
+
+/// Ant Rutine
+/// move between locations,
+/// once reached it waits for a short period of time
+struct AntRutinePoint {
+    /// Entity whose transform point is tied to
+    entity: Entity,
+
+    // transform in ant_space that point is at
+    transform: Transform,
+
+    // TODO
+    // Guided path towards a point, e.g. using a* ant will try to move
+    // according to the path
+    // guided_path:
+    //
+    /// how long, in seconds, the ant will wait at a given point
+    wait_time: f32,
+}
+#[derive(Component)]
+struct AntRutineCollection {
+    points: Vec<AntRutinePoint>,
+}
+impl AntRutineCollection {
+    pub fn get_next_point(&self, current_point: &AntRutinePoint) -> &AntRutinePoint {
+        for (i, point) in self.points.iter().enumerate() {
+            if point.entity == current_point.entity {
+                if let Some(point) = self.points.get((i + 1) % self.points.len()) {
+                    return point;
+                }
+            }
+        }
+        unreachable!()
+    }
+}
+
+#[derive(Component)]
+struct AntRutine {
+    point: &'static AntRutinePoint,
+}
+
+#[derive(Component)]
+struct AntRutineMoveToPoint(pub &'static AntRutinePoint);
+impl AntRutineMoveToPoint {
+    fn interpolate(&self, transform: &mut Transform, speed: f32) {
+        // TODO follow a path
+        // linear interpolation for now
+        let dir = (self.0.transform.translation - transform.translation).normalize();
+        transform.translation += dir * speed
+    }
+
+    fn reached_end(&self, transform: &Transform) -> bool {
+        let length = (self.0.transform.translation - transform.translation).length();
+        const ACCEPTED_LENGTH: f32 = 2.;
+        length < ACCEPTED_LENGTH
+    }
+}
+
+#[derive(Component)]
+struct AntRutineWaitAtPoint(Timer);
+impl AntRutineWaitAtPoint {
+    fn new(time: f32) -> Self {
+        Self(Timer::from_seconds(time, TimerMode::Once))
+    }
+}
+
+fn antrutine_move(
+    query: Query<
+        (Entity, &Parent, &AntRutine, &AntRutineMoveToPoint),
+        (With<AntRutine>, With<AntRutineMoveToPoint>),
+    >,
+    mut q_transform: Query<&mut Transform, With<Ant>>,
+    mut commands: Commands,
+) {
+    const ANT_MOVEMENT_SPEED: f32 = 1.;
+
+    for (entity, parent, rutine, rutine_movement) in query.iter() {
+        if let Ok(mut transform) = q_transform.get_mut(parent.get()) {
+            rutine_movement.interpolate(&mut transform, ANT_MOVEMENT_SPEED);
+            if rutine_movement.reached_end(&transform) {
+                commands.entity(entity).remove::<AntRutineMoveToPoint>();
+                commands
+                    .entity(entity)
+                    .insert(AntRutineWaitAtPoint::new(rutine.point.wait_time));
+            }
+        }
+    }
+}
+
+fn antrutine_wait(
+    mut query: Query<
+        (Entity, &Parent, &mut AntRutine, &mut AntRutineWaitAtPoint),
+        (With<AntRutine>, With<AntRutineWaitAtPoint>),
+    >,
+    q_rutine_collection: Query<&AntRutineCollection>,
+    mut commands: Commands,
+    time: Res<Time>,
+) {
+    for (entity, parent, mut rutine, mut rutine_wait) in query.iter_mut() {
+        rutine_wait.0.tick(time.delta());
+        if rutine_wait.0.finished() {
+            if let Ok(collection) = q_rutine_collection.get(parent.get()) {
+                rutine.point = collection.get_next_point(rutine.point);
+                commands.entity(entity).remove::<AntRutineWaitAtPoint>();
+                commands
+                    .entity(entity)
+                    .insert(AntRutineMoveToPoint(rutine.point));
+            }
+        }
+    }
 }

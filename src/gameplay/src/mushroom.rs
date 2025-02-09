@@ -35,9 +35,9 @@ pub struct Blooms{
 //Terrible helper function for taking a bloom_value ([0,1]) and returning the transitions when using three blendshapes
 fn interpolate_three_blendshapes(t:f32) -> (f32, f32, f32) {
     return (
-        (1.-2.*t).clamp(0.,1.),
-        (1.-(2.*t-1.).abs()).clamp(0.,1.),
-        (2.*t-1.).clamp(0.,1.)
+        (1.-2.*t),
+        (1.-(2.*t-1.).abs()),
+        (2.*t-1.)
     );
 }
 
@@ -90,7 +90,9 @@ fn update_mushroom_size(
         let sign = if mush.bloomed {1.} else {-1.}; // TODO: there has to be a sexier way to do this...
         mush.bloom_value=(mush.bloom_value+sign*mush.bloom_tween).clamp(0.,1.);
 
-        let curve = EasingCurve::new(0.,1.,EaseFunction::ElasticOut);
+        let curve = EasingCurve::new(0.,1.,
+            if mush.bloomed {EaseFunction::ElasticOut} else {EaseFunction::ElasticIn});
+
         let (t0, t1, t2) = interpolate_three_blendshapes(curve.sample(mush.bloom_value).expect("bloom_value outside unit interval!"));
 
         weights.weights_mut()[1]=t0; //

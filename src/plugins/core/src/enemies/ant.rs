@@ -144,6 +144,7 @@ fn spawn_ant(
             PuffyShroomCollision, // todo, should be removed for cordycepted ant?
             AntRutineComponent {
                 collection: event.collection,
+                current_point: event.first_rutine_point,
                 action: AntRutineAction::Move(event.first_rutine_point),
             },
             //
@@ -312,7 +313,9 @@ impl AntRutineCollection {
         // assumes all children are AntRutinePoint
         for (i, child) in children.iter().enumerate() {
             if *child == current {
-                return *children.get((i + 1) % children.len()).unwrap();
+                let c = *children.get((i + 1) % children.len()).unwrap();
+                info!("child {:?}", c);
+                return c;
             }
         }
         unreachable!()
@@ -328,11 +331,12 @@ pub struct AntRutinePoint;
 #[derive(Component)]
 struct AntRutineComponent {
     collection: Entity,
+    current_point: Entity,
     action: AntRutineAction,
 }
 enum AntRutineAction {
     Move(Entity /* target point */),
-    Wait(Timer),
+    Wait(Entity /* timer entity */),
 }
 impl AntRutineComponent {
     fn interpolate(&self, transform: &mut Transform, target_position: &Vec3, delta: f32) {
@@ -348,14 +352,20 @@ impl AntRutineComponent {
         (target_positon - position).length() < POSITION_MARGIN
     }
 }
+#[derive(Component)]
+struct AntRutineWaitTimer(Timer);
 
 fn ant_rutine(
-    mut q_antrutine: Query<(&AntRutineComponent, &mut Transform), With<Ant>>,
+    mut q_antrutine: Query<(&mut AntRutineComponent, &mut Transform), With<Ant>>,
     q_rutine_collections: Query<(&Children, &AntRutineCollection), Without<Ant>>,
     q_rutine_points: Query<(&AntRutinePoint, &Transform), Without<Ant>>,
+    mut q_rutine_wait_timers: Query<&mut AntRutineWaitTimer>,
     time: Res<Time>,
+    mut commands: Commands,
 ) {
-    for (ant_rutine, mut transform) in q_antrutine.iter_mut() {
+    const ANT_RUTINE_WAIT: f32 = 1.;
+
+    for (mut ant_rutine, mut transform) in q_antrutine.iter_mut() {
         match ant_rutine.action {
             AntRutineAction::Move(e_point) => {
                 let (_, point_transform) = q_rutine_points.get(e_point).unwrap();
@@ -365,11 +375,30 @@ fn ant_rutine(
                     time.delta_secs(),
                 );
                 if ant_rutine.reached_point(&transform.translation, &point_transform.translation) {
-                    debug!("Ant reached rutine position");
-                    todo!()
+                    info!("Ant reached rutine position");
+                    let timer = commands
+                        .spawn(AntRutineWaitTimer(Timer::from_seconds(
+                            ANT_RUTINE_WAIT,
+                            TimerMode::Once,
+                        )))
+                        .id();
+                    ant_rutine.action = AntRutineAction::Wait(timer);
                 }
             }
-            _ => todo!(),
+            AntRutineAction::Wait(e_timer) => {
+                let mut timer = q_rutine_wait_timers.get_mut(e_timer).unwrap();
+                timer.0.tick(time.delta());
+                if !timer.0.finished() {
+                    continue;
+                }
+                info!("Ant waited... will now move to next point");
+                commands.entity(e_timer).despawn();
+
+                let (children, collection) =
+                    q_rutine_collections.get(ant_rutine.collection).unwrap();
+                let new_point = collection.get_next_point(ant_rutine.current_point, children);
+                ant_rutine.action = AntRutineAction::Move(new_point);
+            }
         }
     }
 }

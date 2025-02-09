@@ -152,6 +152,7 @@ fn setup(
         .with_children(|parent| {
             parent.spawn((AntRutinePoint, Transform::from_xyz(-4., 1., -3.)));
             parent.spawn((AntRutinePoint, Transform::from_xyz(-4., 1., 2.)));
+            parent.spawn((AntRutinePoint, Transform::from_xyz(4., 1., -4.)));
             parent.spawn((AntRutinePoint, Transform::from_xyz(4., 1., 4.)));
         })
         .id();
@@ -218,16 +219,16 @@ pub fn setup_walls(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let mut t = Transform::from_xyz(3.0, 1.0, 4.0);
-    t.scale = Vec3::new(2.0, 1.0, 2.0);
-    commands.spawn((
-        Wall,
-        t,
-        Collider::cuboid(t.scale.x, t.scale.y, t.scale.z),
-        RigidBody::Static,
-        //
-        Mesh3d(meshes.add(Cuboid::from_size(t.scale))),
-        MeshMaterial3d(materials.add(Color::srgb_u8(190, 255, 220))),
-    ));
+    // t.scale = Vec3::new(2.0, 1.0, 2.0);
+    // commands.spawn((
+    //     Wall,
+    //     t,
+    //     Collider::cuboid(t.scale.x, t.scale.y, t.scale.z),
+    //     RigidBody::Static,
+    //     //
+    //     Mesh3d(meshes.add(Cuboid::from_size(t.scale))),
+    //     MeshMaterial3d(materials.add(Color::srgb_u8(190, 255, 220))),
+    // ));
 
     // test rigidbody
     let mut t = Transform::from_xyz(1.0, 4.0, 2.0);

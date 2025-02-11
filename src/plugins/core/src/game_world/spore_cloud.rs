@@ -12,7 +12,8 @@ impl Plugin for SporeCloudPlugin {
 const LIFETIME: f32 = 5.0;
 const SIZE: f32 = 2.0;
 
-#[derive(Component)]
+#[derive(Component, Reflect, Debug)]
+#[reflect(Component)]
 pub struct SporeCloud(Timer);
 impl Default for SporeCloud {
     fn default() -> Self {

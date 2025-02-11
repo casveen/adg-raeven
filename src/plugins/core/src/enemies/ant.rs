@@ -13,7 +13,12 @@ use crate::{
 pub struct AntPlugin;
 impl Plugin for AntPlugin {
     fn build(&self, app: &mut bevy::app::App) {
-        app.register_type::<AntRespawnTimer>()
+        app.register_type::<Ant>()
+            .register_type::<AntRespawnTimer>()
+            .register_type::<AntRutineCollection>()
+            .register_type::<AntRutinePoint>()
+            .register_type::<AntHillEntry>()
+            .register_type::<AntHillPipe>()
             .add_systems(
                 Update,
                 (
@@ -35,7 +40,8 @@ impl Plugin for AntPlugin {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 struct Ant;
 
 #[derive(Component)]
@@ -195,7 +201,10 @@ fn spore_cloud_collision(
                 debug!("ant spore_cloud collision: {}, {:?}", entity, spore_cloud);
 
                 // infect ant
-                commands.entity(entity).insert(CordyCeptedComponent).remove::<AntRutineComponent>();
+                commands
+                    .entity(entity)
+                    .insert(CordyCeptedComponent)
+                    .remove::<AntRutineComponent>();
                 commands.entity(spore_cloud).despawn();
             }
         }
@@ -227,10 +236,12 @@ fn kill_ant(
 }
 
 // Composed of two entries
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 #[require(Transform)]
 pub struct AntHillPipe;
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 #[require(Transform)]
 pub struct AntHillEntry {
     pub other_entry: Entity,
@@ -307,7 +318,8 @@ fn teleport_ant(
 
 ///
 /// Collection of rutine points ants will move to, placed on ant spawner
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 #[require(Transform(|| Transform::default()))]
 pub struct AntRutineCollection;
 impl AntRutineCollection {
@@ -324,7 +336,8 @@ impl AntRutineCollection {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 #[require(Transform)]
 pub struct AntRutinePoint;
 

@@ -8,13 +8,16 @@ use super::spore_cloud::SpawnSporeCloud;
 pub(super) struct PuffyShroomsPlugin;
 impl Plugin for PuffyShroomsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, puffy_shroom_collision)
+        app.register_type::<PuffyShroom>()
+            .register_type::<PuffyShroomCollision>()
+            .add_systems(Update, puffy_shroom_collision)
             .add_observer(spawn_puffy_shroom)
             .add_observer(destroy_puffy_shroom);
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect, Default, Debug)]
+#[reflect(Component)]
 pub struct PuffyShroom;
 
 #[derive(Event)]
@@ -58,7 +61,9 @@ fn destroy_puffy_shroom(
     commands.entity(trigger.entity()).remove_parent().despawn();
 }
 
-#[derive(Component)]
+/// For entities colliding with PuffyShrooms
+#[derive(Component, Reflect, Default, Debug)]
+#[reflect(Component)]
 pub struct PuffyShroomCollision;
 
 fn puffy_shroom_collision(

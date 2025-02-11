@@ -5,7 +5,9 @@ const UP: Dir3 = Dir3::Y;
 pub struct IsometricCameraPlugin;
 impl Plugin for IsometricCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<CameraManager>()
+        app.register_type::<IsometricCamera>()
+            .register_type::<CameraManager>()
+            .init_resource::<CameraManager>()
             .init_resource::<CameraYaw>()
             .add_systems(Startup, setup)
             .add_systems(Update, update);
@@ -23,13 +25,14 @@ impl CameraYaw {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Reflect)]
 pub enum CameraMode {
     Game,
     Editor,
 }
 
-#[derive(Debug, Resource)]
+#[derive(Debug, Resource, Reflect)]
+#[reflect(Resource)]
 pub struct CameraManager {
     current_mode: CameraMode,
     cameras: HashMap<CameraMode, IsometricCamera>,
@@ -97,7 +100,8 @@ impl CameraManager {
     }
 }
 
-#[derive(Debug, Component)]
+#[derive(Debug, Component, Reflect)]
+#[reflect(Component)]
 pub struct IsometricCamera {
     pivot: Vec3,
     angle_yaw: f32,

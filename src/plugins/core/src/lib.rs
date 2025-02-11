@@ -1,4 +1,5 @@
 use avian3d::PhysicsPlugins;
+use blenvy::BlenvyPlugin;
 
 pub mod camera;
 pub mod enemies;
@@ -13,6 +14,7 @@ pub struct CorePlugin;
 impl bevy::prelude::Plugin for CorePlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.add_plugins((
+            BlenvyPlugin::default(),
             exit_game::ExitGamePlugin,
             game_world::GameWorldPlugin,
             input::input_manager::InputManagerPlugin,

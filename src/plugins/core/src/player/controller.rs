@@ -10,25 +10,28 @@ use super::states;
 pub struct PlayerControllerPlugin;
 impl Plugin for PlayerControllerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Startup,
-            (
-                register_input,
-                //
-            ),
-        )
-        .add_systems(Update, process_input)
-        .add_observer(spawn_player);
+        app.register_type::<Player>()
+            .add_systems(
+                Startup,
+                (
+                    register_input,
+                    //
+                ),
+            )
+            .add_systems(Update, process_input)
+            .add_observer(spawn_player);
     }
 }
 
+#[derive(Reflect)]
 enum PlayerState {
     NotSpawned,
     Dead,
     Alive,
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 #[require(Transform(|| Transform::from_xyz(0., 0., 0.)))]
 pub struct Player {
     state: PlayerState,

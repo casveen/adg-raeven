@@ -193,7 +193,9 @@ fn spore_cloud_collision(
         for colliding_entity in colliding_entities.iter() {
             if let Ok(spore_cloud) = q_spore_cloud.get(*colliding_entity) {
                 debug!("ant spore_cloud collision: {}, {:?}", entity, spore_cloud);
-                commands.entity(entity).insert(CordyCeptedComponent);
+
+                // infect ant
+                commands.entity(entity).insert(CordyCeptedComponent).remove::<AntRutineComponent>();
                 commands.entity(spore_cloud).despawn();
             }
         }

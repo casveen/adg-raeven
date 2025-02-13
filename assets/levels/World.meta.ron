@@ -3,7 +3,14 @@
    [ 
     ("boxy", File ( path: "models/boxy.glb" )),
     ("Tunnel_asset", File ( path: "blueprints/Tunnel_asset.glb" )),
-    ("Material.001", File ( path: "materials/Material.001.glb" )),
     ("below_terrain_material", File ( path: "materials/below_terrain_material.glb" )),
+    ("Material.001", File ( path: "materials/Material.001.glb" )),
+    ("lantern", File ( path: "blueprints/lantern.glb" )),
+    ("lantern_material_baked", File ( path: "materials/lantern_material_baked.glb" )),
+    ("physalis", File ( path: "blueprints/physalis.glb" )),
+    ("baked_physalis_material", File ( path: "materials/baked_physalis_material.glb" )),
+    ("physalis_fruit_material", File ( path: "materials/physalis_fruit_material.glb" )),
+    ("cordyceps", File ( path: "blueprints/cordyceps.glb" )),
+    ("baked_cordyceps_material", File ( path: "materials/baked_cordyceps_material.glb" )),
    ]
 )

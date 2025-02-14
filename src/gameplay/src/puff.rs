@@ -63,7 +63,7 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
         Attribute::POSITION,
         writer
             .attr(Attribute::POSITION)
-            .add(writer.lit(Vec3::Y)*writer.rand(ScalarType::Float).mul(writer.lit(2.0)))
+            .add(writer.lit(Vec3::Y)*writer.rand(ScalarType::Float).mul(writer.lit(1.2)))
             .expr(),
     );
 

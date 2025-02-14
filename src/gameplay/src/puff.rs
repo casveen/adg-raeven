@@ -1,8 +1,5 @@
-
-use std::{error::Error, f32::consts::FRAC_PI_2};
-
 use bevy::{
-    color::palettes::css::FOREST_GREEN,
+    color::palettes::css::CORNSILK,
     core_pipeline::tonemapping::Tonemapping,
     math::vec3,
     prelude::*,
@@ -74,7 +71,7 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
     // Vary the size a bit.
     let init_size = SetAttributeModifier::new(
         Attribute::F32_0,
-        (writer.rand(ScalarType::Float) * writer.lit(0.25) + writer.lit(0.25)).expr(),
+        (writer.rand(ScalarType::Float) * writer.lit(0.75) + writer.lit(0.25)).expr(),
     );
 
     // Make the particles grow over time.
@@ -83,11 +80,10 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
         writer
             .attr(Attribute::F32_0)
             .mul(
-                writer
+                (writer
                     .lit(1.0)
                     .add((writer.attr(Attribute::AGE)).mul(writer.lit(10)))
-                    ,
-            ).min(writer.lit(1.0))
+            ).min(writer.lit(1.0)))
             .expr(),
     );
 
@@ -146,8 +142,8 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
     let update_alpha =  ColorOverLifetimeModifier {
         gradient: 
             Gradient::linear(
-                Vec4::new(1.0,1.0,1.0,1.0), 
-                Vec4::new(1.0,1.0,1.0,0.0), 
+                CORNSILK.with_alpha(1.0).to_vec4(),
+                CORNSILK.with_alpha(0.0).to_vec4()
             )
     };
 
@@ -155,7 +151,7 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
 
     // Add the effect.
     effects.add(
-        EffectAsset::new(64, Spawner::burst(32.0.into(), 3.0.into()), module)
+        EffectAsset::new(128, Spawner::burst(128.0.into(), 3.0.into()), module)
             .with_name("cartoon explosion")
             .init(init_xz_pos)
             .init(init_y_pos)

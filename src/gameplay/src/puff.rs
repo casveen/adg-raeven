@@ -8,23 +8,23 @@ use bevy_hanabi::prelude::*;
 
 #[derive(Component, Reflect, Default, Debug)]
 #[reflect(Component)]
-pub struct Puffable {
-    puffed : bool,    
-    puff_handle : Handle<EffectAsset>,
-}
+pub struct Puffable;
+
+#[derive(Event)]
+struct Puff;
+
+
 
 fn puff(
-    mut query:  Query<(&mut Puffable, &Children)>,
+    trigger: Trigger<Puff>,
+    puffables: Query<(&Puffable, &Children)>,
     mut effect: Query<&mut EffectInitializers>,
 ) {
-    for (mut puff, children) in query.iter_mut() {
-        if puff.puffed {
-            for &child in children.iter() {
-                if let Ok(mut chi) = effect.get_mut(child) {
-                    chi.reset();
-                    puff.puffed=false;
-                } 
-            }
+    if let Ok((_, children)) = puffables.get(trigger.entity()) {
+        for &child in children.iter() {
+            if let Ok(mut chi) = effect.get_mut(child) {
+                chi.reset();
+            } 
         }
     }
 }
@@ -35,10 +35,10 @@ fn set_puff_assets_to_puffables(
     //asset_server: Res<AssetServer>,
     mut effects: ResMut<Assets<EffectAsset>>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut query: Query<(Entity, &mut Puffable, &Transform), Added<Puffable>>,
+    mut query: Query<(Entity, &mut Puffable), Added<Puffable>>,
 ) {
     // Create the effect asset.
-    for (entity, _, transform) in query.iter_mut() {
+    for (entity, _) in query.iter_mut() {
         // Create the mesh.
         let mesh = meshes.add(SphereMeshBuilder::new(0.5, SphereKind::Ico { subdivisions: 2 }).build());
         let effect = create_effect(mesh, &mut effects);
@@ -51,7 +51,10 @@ fn set_puff_assets_to_puffables(
                 ..default()
             },
         )).id();
-        commands.entity(entity).add_child(particle_entity);
+
+        commands.entity(entity)
+        .add_child(particle_entity)
+        .observe(puff);
     }
 }
 
@@ -193,7 +196,7 @@ impl Plugin for PuffPlugin {
     fn build(&self, app: &mut App) {
         app
         .register_type::<Puffable>()
-        .add_systems(Update, (set_puff_assets_to_puffables, puff))
+        .add_systems(Update, set_puff_assets_to_puffables)
         .add_plugins(HanabiPlugin);
     }
 }

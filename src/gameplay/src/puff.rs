@@ -1,7 +1,5 @@
 use bevy::{
     color::palettes::css::CORNSILK,
-    core_pipeline::tonemapping::Tonemapping,
-    math::vec3,
     prelude::*,
     render::mesh::{SphereKind, SphereMeshBuilder},
 };
@@ -10,34 +8,52 @@ use bevy_hanabi::prelude::*;
 
 #[derive(Component, Reflect, Default, Debug)]
 #[reflect(Component)]
-pub struct Puffable{
+pub struct Puffable {
+    puffed : bool,    
+    puff_handle : Handle<EffectAsset>,
 }
 
+fn puff(
+    mut query:  Query<(&mut Puffable, &Children)>,
+    mut effect: Query<&mut EffectInitializers>,
+) {
+    for (mut puff, children) in query.iter_mut() {
+        if puff.puffed {
+            for &child in children.iter() {
+                if let Ok(mut chi) = effect.get_mut(child) {
+                    chi.reset();
+                    puff.puffed=false;
+                } 
+            }
+        }
+    }
+}
 
-// Performs initialization of the scene.
-fn setup(
+// puff the puffable entities
+fn set_puff_assets_to_puffables(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
+    //asset_server: Res<AssetServer>,
     mut effects: ResMut<Assets<EffectAsset>>,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut query: Query<(Entity, &mut Puffable, &Transform), Added<Puffable>>,
 ) {
-    // Create the mesh.
-    let mesh = meshes.add(SphereMeshBuilder::new(0.5, SphereKind::Ico { subdivisions: 4 }).build());
-
     // Create the effect asset.
-    let effect = create_effect(mesh, &mut effects);
+    for (entity, _, transform) in query.iter_mut() {
+        // Create the mesh.
+        let mesh = meshes.add(SphereMeshBuilder::new(0.5, SphereKind::Ico { subdivisions: 2 }).build());
+        let effect = create_effect(mesh, &mut effects);
 
-    // Spawn the effect.
-    commands.spawn((
-        Name::new("cartoon explosion"),
-        ParticleEffectBundle {
-            effect: ParticleEffect::new(effect),
-            ..default()
-        },
-    ));
+        // Spawn the effect.
+        let particle_entity =commands.spawn((
+            Name::new("puff"),
+            ParticleEffectBundle {
+                effect: ParticleEffect::new(effect),
+                ..default()
+            },
+        )).id();
+        commands.entity(entity).add_child(particle_entity);
+    }
 }
-
-
 
 
 
@@ -48,7 +64,7 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
 
     // Position the particle laterally within a small radius.
     let init_xz_pos = SetPositionCircleModifier {
-        center: writer.lit(Vec3::Y).mul(writer.lit(2.0)).expr(),
+        center: writer.lit(Vec3::ZERO).expr(),
         axis: writer.lit(Vec3::Y).expr(),
         radius: writer.lit(0.2).expr(),
         dimension: ShapeDimension::Volume,
@@ -61,6 +77,7 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
         writer
             .attr(Attribute::POSITION)
             .add(writer.lit(Vec3::Y)*writer.rand(ScalarType::Float).mul(writer.lit(1.2)))
+
             .expr(),
     );
 
@@ -151,8 +168,8 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
 
     // Add the effect.
     effects.add(
-        EffectAsset::new(128, Spawner::burst(128.0.into(), 3.0.into()), module)
-            .with_name("cartoon explosion")
+        EffectAsset::new(512, Spawner::once(64.0.into(), false), module)
+            .with_name("Puff_effect")
             .init(init_xz_pos)
             .init(init_y_pos)
             .init(init_age)
@@ -174,8 +191,9 @@ pub struct PuffPlugin;
 impl Plugin for PuffPlugin {
     
     fn build(&self, app: &mut App) {
-        app.register_type::<Puffable>()
-        .add_systems(Startup, setup)
+        app
+        .register_type::<Puffable>()
+        .add_systems(Update, (set_puff_assets_to_puffables, puff))
         .add_plugins(HanabiPlugin);
     }
 }

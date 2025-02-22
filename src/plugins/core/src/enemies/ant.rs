@@ -15,6 +15,7 @@ impl Plugin for AntPlugin {
     fn build(&self, app: &mut bevy::app::App) {
         app.register_type::<Ant>()
             .register_type::<AntRespawnTimer>()
+            .register_type::<AntSpawner>()
             .register_type::<AntRutineCollection>()
             .register_type::<AntRutinePoint>()
             .register_type::<AntHillEntry>()
@@ -44,7 +45,8 @@ impl Plugin for AntPlugin {
 #[reflect(Component)]
 struct Ant;
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct AntSpawner {
     max_ants: u8,
     current_num_ants: u8,

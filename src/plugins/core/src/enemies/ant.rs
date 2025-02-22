@@ -77,7 +77,6 @@ fn insert_antspawner(
     q_parents: Query<&Parent, With<AntRutinePoint>>,
     mut q_spawners: Query<&mut AntRutineCollection>,
 ) {
-    warn!("!!! ADD TO ANT RUTINE COLLECTIONS");
     let Ok(parent) = q_parents.get(rp_event.entity()) else {
         println!("!!! NO PARENT FOUND");
         return;
@@ -89,7 +88,7 @@ fn insert_antspawner(
             rp_event.entity(),
             parent.get()
         );
-        spawner.rutine_points.insert(rp_event.entity());
+        spawner.insert(rp_event.entity());
     } else {
         println!("!!! NO SPAWNER FOUND");
     }
@@ -339,9 +338,16 @@ fn teleport_ant(
 #[reflect(Component, Default)]
 #[require(Transform(|| Transform::default()))]
 pub struct AntRutineCollection {
-    rutine_points: HashSet<Entity>,
+    rutine_points: Vec<Entity>,
 }
 impl AntRutineCollection {
+    fn insert(&mut self, entity: Entity) {
+        match self.rutine_points.binary_search(&entity) {
+            Ok(_) => (),
+            Err(pos) => self.rutine_points.insert(pos, entity),
+        }
+    }
+
     fn get_first_point(&self) -> Entity {
         let Some(p) = self.rutine_points.iter().next() else {
             unreachable!("AntRutineCollection contains no points...")

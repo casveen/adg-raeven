@@ -1,5 +1,5 @@
 use avian3d::prelude::*;
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashSet};
 
 use crate::{
     game_world::{
@@ -34,6 +34,7 @@ impl Plugin for AntPlugin {
                     ant_rutine,
                 ),
             )
+            .add_observer(insert_antspawner)
             .add_observer(spawn_ant)
             .add_observer(kill_ant)
             .add_observer(cordyceptmovement)
@@ -68,6 +69,29 @@ impl AntSpawner {
 
     fn should_spawn(&self) -> bool {
         self.current_num_ants < self.max_ants
+    }
+}
+
+fn insert_antspawner(
+    rp_event: Trigger<OnInsert, AntRutinePoint>,
+    q_parents: Query<&Parent, With<AntRutinePoint>>,
+    mut q_spawners: Query<&mut AntRutineCollection>,
+) {
+    warn!("!!! ADD TO ANT RUTINE COLLECTIONS");
+    let Ok(parent) = q_parents.get(rp_event.entity()) else {
+        println!("!!! NO PARENT FOUND");
+        return;
+    };
+
+    if let Ok(mut spawner) = q_spawners.get_mut(parent.get()) {
+        println!(
+            "!!! Inserting rutine point {}, into spawner {}",
+            rp_event.entity(),
+            parent.get()
+        );
+        spawner.rutine_points.insert(rp_event.entity());
+    } else {
+        println!("!!! NO SPAWNER FOUND");
     }
 }
 
@@ -109,27 +133,18 @@ fn respawn_timer_run_if(query: Query<(), With<AntRespawnTimer>>) -> bool {
 }
 
 fn respawn_timer(
-    query: Query<(Entity, &Transform, &AntRespawnTimer, &Children)>,
-    q_rutine_collections: Query<Entity, With<AntRutineCollection>>,
-    q_rutine_points: Query<(Entity, &Parent), With<AntRutinePoint>>,
+    query: Query<(Entity, &Transform, &AntRespawnTimer, &AntRutineCollection)>,
     mut commands: Commands,
 ) {
-    for (entity, transform, _, children) in query.iter().filter(|(_, _, t, _)| t.timer.finished()) {
+    for (entity, transform, _, rutine_collection) in
+        query.iter().filter(|(_, _, t, _)| t.timer.finished())
+    {
         commands.entity(entity).remove::<AntRespawnTimer>();
-
-        let collection = children
-            .iter()
-            .find(|c| q_rutine_collections.get(**c).is_ok())
-            .unwrap();
-        let (point, _) = q_rutine_points
-            .iter()
-            .find(|(_, p)| p.get() == *collection)
-            .unwrap();
 
         commands.entity(entity).trigger(SpawnAnt {
             transform: *transform,
-            collection: *collection,
-            first_rutine_point: point,
+            collection: entity,
+            first_rutine_point: rutine_collection.get_first_point(),
         });
     }
 }
@@ -320,21 +335,39 @@ fn teleport_ant(
 
 ///
 /// Collection of rutine points ants will move to, placed on ant spawner
-#[derive(Component, Reflect)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Default, Debug)]
+#[reflect(Component, Default)]
 #[require(Transform(|| Transform::default()))]
-pub struct AntRutineCollection;
+pub struct AntRutineCollection {
+    rutine_points: HashSet<Entity>,
+}
 impl AntRutineCollection {
-    fn get_next_point(&self, current: Entity, children: &Children) -> Entity {
-        // assumes all children are AntRutinePoint
-        for (i, child) in children.iter().enumerate() {
-            if *child == current {
-                let c = *children.get((i + 1) % children.len()).unwrap();
-                info!("child {} {:?}", (i + 1) % children.len(), c);
-                return c;
-            }
-        }
-        unreachable!()
+    fn get_first_point(&self) -> Entity {
+        let Some(p) = self.rutine_points.iter().next() else {
+            unreachable!("AntRutineCollection contains no points...")
+        };
+        println!("!!! first entt == {}", *p);
+        *p
+    }
+
+    fn get_next_point(&self, current: Entity) -> Entity {
+        let Some(start_index) = self.rutine_points.iter().position(|p| *p == current) else {
+            unreachable!()
+        };
+        let e = *self
+            .rutine_points
+            .iter()
+            .cycle()
+            .skip(start_index)
+            .skip(1)
+            .next()
+            .unwrap();
+        println!(
+            "!!! size: {}, getting entt: {}",
+            self.rutine_points.len(),
+            e
+        );
+        e
     }
 }
 
@@ -374,7 +407,7 @@ struct AntRutineWaitTimer(Timer);
 
 fn ant_rutine(
     mut q_antrutine: Query<(&mut AntRutineComponent, &mut Transform), With<Ant>>,
-    q_rutine_collections: Query<(&Children, &AntRutineCollection), Without<Ant>>,
+    q_rutine_collections: Query<&AntRutineCollection, Without<Ant>>,
     q_rutine_points: Query<(&AntRutinePoint, &Transform), Without<Ant>>,
     mut q_rutine_wait_timers: Query<&mut AntRutineWaitTimer>,
     time: Res<Time>,
@@ -411,9 +444,8 @@ fn ant_rutine(
                 info!("Ant waited... will now move to next point");
                 commands.entity(e_timer).despawn();
 
-                let (children, collection) =
-                    q_rutine_collections.get(ant_rutine.collection).unwrap();
-                let new_point = collection.get_next_point(ant_rutine.current_point, children);
+                let collection = q_rutine_collections.get(ant_rutine.collection).unwrap();
+                let new_point = collection.get_next_point(ant_rutine.current_point);
                 ant_rutine.current_point = new_point;
                 ant_rutine.action = AntRutineAction::Move(new_point);
             }

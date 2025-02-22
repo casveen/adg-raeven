@@ -19212,8 +19212,16 @@
       "isComponent": true,
       "isResource": false,
       "long_name": "core::enemies::ant::AntRutineCollection",
-      "properties": {},
-      "required": [],
+      "properties": {
+        "rutine_points": {
+          "type": {
+            "$ref": "#/$defs/bevy_utils::hashbrown::HashSet<bevy_ecs::entity::Entity, bevy_utils::hashbrown::hash_map::DefaultHashBuilder>"
+          }
+        }
+      },
+      "required": [
+        "rutine_points"
+      ],
       "short_name": "AntRutineCollection",
       "type": "object",
       "typeInfo": "Struct"

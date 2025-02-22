@@ -19215,7 +19215,7 @@
       "properties": {
         "rutine_points": {
           "type": {
-            "$ref": "#/$defs/bevy_utils::hashbrown::HashSet<bevy_ecs::entity::Entity, bevy_utils::hashbrown::hash_map::DefaultHashBuilder>"
+            "$ref": "#/$defs/alloc::vec::Vec<bevy_ecs::entity::Entity>"
           }
         }
       },

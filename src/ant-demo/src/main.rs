@@ -15,7 +15,10 @@ fn main() {
 
 fn setup_game(mut commands: Commands) {
     commands.spawn((
-        BlueprintInfo::from_path("levels/AntDemo.glb"),
+        BlueprintInfo {
+            path: "levels/AntDemo.glb".to_string(),
+            name: core::utils::blenvy_checker::LEVEL_STRING.to_string(),
+        },
         SpawnBlueprint,
         HideUntilReady,
         GameWorldTag,

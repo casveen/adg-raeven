@@ -1,5 +1,5 @@
 use avian3d::prelude::*;
-use bevy::{prelude::*, utils::HashSet};
+use bevy::prelude::*;
 
 use crate::{
     game_world::{
@@ -8,6 +8,7 @@ use crate::{
         Wall,
     },
     player::states::cordycept::{CordyCeptMovement, CordyCeptedComponent},
+    utils::blenvy_checker::GameplaySceneLoadedEvent,
 };
 
 pub struct AntPlugin;
@@ -73,24 +74,21 @@ impl AntSpawner {
 }
 
 fn insert_antspawner(
-    rp_event: Trigger<OnInsert, AntRutinePoint>,
-    q_parents: Query<&Parent, With<AntRutinePoint>>,
+    _: Trigger<GameplaySceneLoadedEvent>,
+    q_parents: Query<(Entity, &Parent), With<AntRutinePoint>>,
     mut q_spawners: Query<&mut AntRutineCollection>,
 ) {
-    let Ok(parent) = q_parents.get(rp_event.entity()) else {
-        println!("!!! NO PARENT FOUND");
-        return;
-    };
-
-    if let Ok(mut spawner) = q_spawners.get_mut(parent.get()) {
-        println!(
-            "!!! Inserting rutine point {}, into spawner {}",
-            rp_event.entity(),
-            parent.get()
-        );
-        spawner.insert(rp_event.entity());
-    } else {
-        println!("!!! NO SPAWNER FOUND");
+    for (entity, parent) in q_parents.iter() {
+        if let Ok(mut spawner) = q_spawners.get_mut(parent.get()) {
+            println!(
+                "!!! Inserting rutine point {}, into spawner {}",
+                entity,
+                parent.get()
+            );
+            spawner.insert(entity);
+        } else {
+            println!("!!! NO SPAWNER FOUND");
+        }
     }
 }
 

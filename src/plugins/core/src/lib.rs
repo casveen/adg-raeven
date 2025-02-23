@@ -23,7 +23,7 @@ impl bevy::prelude::Plugin for CorePlugin {
             enemies::EnemiesPlugin,
             settings::plugins::VendorPlugin,
             PhysicsPlugins::default(), // avian3d
-            utils::blenvy_checker::BlenvyCheckerPlugin,
+            utils::gameplayscene_loadstatus::GameplaySceneLoadStatusPlugin,
         ));
     }
 }

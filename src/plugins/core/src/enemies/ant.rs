@@ -8,7 +8,7 @@ use crate::{
         Wall,
     },
     player::states::cordycept::{CordyCeptMovement, CordyCeptedComponent},
-    utils::blenvy_checker::GameplaySceneLoadedEvent,
+    utils::gameplayscene_loadstatus::GameplaySceneLoadedEvent,
 };
 
 pub struct AntPlugin;

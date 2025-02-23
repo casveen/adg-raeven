@@ -1,12 +1,12 @@
 use bevy::prelude::*;
 
-pub struct BlenvyCheckerPlugin;
-impl Plugin for BlenvyCheckerPlugin {
+pub struct GameplaySceneLoadStatusPlugin;
+impl Plugin for GameplaySceneLoadStatusPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(GameplaySceneLoaded::default())
             .add_systems(
                 Update,
-                gameplay_scene_loaded.run_if(is_gameplay_scene_not_loaded),
+                read_blueprint_event.run_if(is_gameplay_scene_not_loaded),
             );
     }
 }
@@ -16,7 +16,7 @@ impl Plugin for BlenvyCheckerPlugin {
 /// "${project_root}/levels/**.glb"
 /// Give all those blueprints this name to look after events of when it is
 /// finally loaded
-pub const LEVEL_STRING: &str = "CurrentGameplayLevel";
+pub const LEVEL_NAME: &str = "CurrentGameplayLevel";
 
 #[derive(Event)]
 pub struct GameplaySceneLoadedEvent;
@@ -30,7 +30,7 @@ fn is_gameplay_scene_not_loaded(res: Res<GameplaySceneLoaded>) -> bool {
     !res.loaded
 }
 
-fn gameplay_scene_loaded(
+fn read_blueprint_event(
     mut bp_events: EventReader<blenvy::BlueprintEvent>,
     mut commands: Commands,
     mut res: ResMut<GameplaySceneLoaded>,
@@ -46,8 +46,8 @@ fn gameplay_scene_loaded(
             return;
         };
 
-        if *blueprint_name == LEVEL_STRING.to_string() {
-            info!("{} fully loaded", LEVEL_STRING);
+        if *blueprint_name == LEVEL_NAME.to_string() {
+            info!("{} fully loaded", LEVEL_NAME);
             commands.trigger(GameplaySceneLoadedEvent);
             res.loaded = true;
         }

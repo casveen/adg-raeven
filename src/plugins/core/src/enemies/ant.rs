@@ -80,14 +80,9 @@ fn insert_antspawner(
 ) {
     for (entity, parent) in q_parents.iter() {
         if let Ok(mut spawner) = q_spawners.get_mut(parent.get()) {
-            println!(
-                "!!! Inserting rutine point {}, into spawner {}",
-                entity,
-                parent.get()
-            );
             spawner.insert(entity);
         } else {
-            println!("!!! NO SPAWNER FOUND");
+            unreachable!("!!! No AntSpawner Found")
         }
     }
 }
@@ -350,7 +345,6 @@ impl AntRutineCollection {
         let Some(p) = self.rutine_points.iter().next() else {
             unreachable!("AntRutineCollection contains no points...")
         };
-        println!("!!! first entt == {}", *p);
         *p
     }
 
@@ -366,11 +360,6 @@ impl AntRutineCollection {
             .skip(1)
             .next()
             .unwrap();
-        println!(
-            "!!! size: {}, getting entt: {}",
-            self.rutine_points.len(),
-            e
-        );
         e
     }
 }

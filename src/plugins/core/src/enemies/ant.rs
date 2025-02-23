@@ -36,6 +36,7 @@ impl Plugin for AntPlugin {
                 ),
             )
             .add_observer(insert_antspawner)
+            .add_observer(spawning_anthill_entry)
             .add_observer(spawn_ant)
             .add_observer(kill_ant)
             .add_observer(cordyceptmovement)
@@ -248,13 +249,66 @@ fn kill_ant(
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 #[require(Transform)]
-pub struct AntHillPipe;
+struct AntHillPipe;
+
 #[derive(Component, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, Default)]
 #[require(Transform)]
-pub struct AntHillEntry {
-    pub other_entry: Entity,
+struct AntHillEntry {
+    radius: f32,
+    height: f32,
 }
+impl Default for AntHillEntry {
+    fn default() -> Self {
+        Self {
+            radius: 1.0,
+            height: 0.5,
+        }
+    }
+}
+
+#[derive(Component)]
+struct AntHillEntryImpl {
+    other_entry: Entity,
+}
+
+fn spawning_anthill_entry(
+    _: Trigger<GameplaySceneLoadedEvent>,
+    q_pipe_children: Query<&Children, With<AntHillPipe>>,
+    q_hill_entries: Query<&AntHillEntry>,
+    mut commands: Commands,
+) {
+    for pipe_children in q_pipe_children.iter() {
+        // gather hill entities from children
+        let hill_entities = pipe_children
+            .iter()
+            .filter(|c| q_hill_entries.contains(**c))
+            .collect::<Vec<_>>();
+        assert!(
+            hill_entities.len() == 2,
+            "AntHillPipe only supports two AntHillEntries"
+        );
+
+        // set hill entities other_entry from previous gather
+        if let Ok(ant_hill) = q_hill_entries.get(*hill_entities[0]) {
+            commands.entity(*hill_entities[0]).insert((
+                AntHillEntryImpl {
+                    other_entry: *hill_entities[1],
+                },
+                Collider::cylinder(ant_hill.radius, ant_hill.height),
+            ));
+        };
+        if let Ok(ant_hill) = q_hill_entries.get(*hill_entities[1]) {
+            commands.entity(*hill_entities[1]).insert((
+                AntHillEntryImpl {
+                    other_entry: *hill_entities[0],
+                },
+                Collider::cylinder(ant_hill.radius, ant_hill.height),
+            ));
+        };
+    }
+}
+
 #[derive(Event)]
 struct AntHillMovement {
     hill_entry_global_transform: GlobalTransform,
@@ -290,7 +344,7 @@ fn recent_movement_in_anthill_cooldown_timer(
 
 fn anthill_entry_collision(
     ant_query: Query<(Entity, &CollidingEntities), (With<Ant>, Without<RecentMovementInAntHill>)>,
-    hill_query: Query<(Entity, &GlobalTransform, &AntHillEntry), With<AntHillEntry>>,
+    hill_query: Query<(Entity, &GlobalTransform, &AntHillEntryImpl), With<AntHillEntry>>,
     mut commands: Commands,
 ) {
     for (entity, colliding_entities) in &ant_query {

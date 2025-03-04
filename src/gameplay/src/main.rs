@@ -8,6 +8,9 @@ use mushroom::*;
 mod puff;
 use puff::*;
 
+mod water;
+use water::*; 
+
 #[derive(Component, Reflect, Default, Debug)]
 #[reflect(Component)]
 struct Player {
@@ -37,6 +40,7 @@ fn main() {
             WorldInspectorPlugin::new(),
             MushroomPlugin,
             PuffPlugin,
+            WaterPlugin,
         ))
         //.register_type::<Player>()
         .add_systems(Startup, setup_game)

@@ -8,6 +8,7 @@ use crate::{
         Wall,
     },
     player::states::cordycept::{CordyCeptMovement, CordyCeptedComponent},
+    utils::gameplayscene_loadstatus::GameplaySceneLoadedEvent,
 };
 
 pub struct AntPlugin;
@@ -15,6 +16,7 @@ impl Plugin for AntPlugin {
     fn build(&self, app: &mut bevy::app::App) {
         app.register_type::<Ant>()
             .register_type::<AntRespawnTimer>()
+            .register_type::<AntSpawner>()
             .register_type::<AntRutineCollection>()
             .register_type::<AntRutinePoint>()
             .register_type::<AntHillEntry>()
@@ -33,6 +35,8 @@ impl Plugin for AntPlugin {
                     ant_rutine,
                 ),
             )
+            .add_observer(insert_antspawner)
+            .add_observer(spawning_anthill_entry)
             .add_observer(spawn_ant)
             .add_observer(kill_ant)
             .add_observer(cordyceptmovement)
@@ -44,7 +48,8 @@ impl Plugin for AntPlugin {
 #[reflect(Component)]
 struct Ant;
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct AntSpawner {
     max_ants: u8,
     current_num_ants: u8,
@@ -66,6 +71,20 @@ impl AntSpawner {
 
     fn should_spawn(&self) -> bool {
         self.current_num_ants < self.max_ants
+    }
+}
+
+fn insert_antspawner(
+    _: Trigger<GameplaySceneLoadedEvent>,
+    q_parents: Query<(Entity, &Parent), With<AntRutinePoint>>,
+    mut q_spawners: Query<&mut AntRutineCollection>,
+) {
+    for (entity, parent) in q_parents.iter() {
+        if let Ok(mut spawner) = q_spawners.get_mut(parent.get()) {
+            spawner.insert(entity);
+        } else {
+            unreachable!("!!! No AntSpawner Found")
+        }
     }
 }
 
@@ -107,27 +126,18 @@ fn respawn_timer_run_if(query: Query<(), With<AntRespawnTimer>>) -> bool {
 }
 
 fn respawn_timer(
-    query: Query<(Entity, &Transform, &AntRespawnTimer, &Children)>,
-    q_rutine_collections: Query<Entity, With<AntRutineCollection>>,
-    q_rutine_points: Query<(Entity, &Parent), With<AntRutinePoint>>,
+    query: Query<(Entity, &Transform, &AntRespawnTimer, &AntRutineCollection)>,
     mut commands: Commands,
 ) {
-    for (entity, transform, _, children) in query.iter().filter(|(_, _, t, _)| t.timer.finished()) {
+    for (entity, transform, _, rutine_collection) in
+        query.iter().filter(|(_, _, t, _)| t.timer.finished())
+    {
         commands.entity(entity).remove::<AntRespawnTimer>();
-
-        let collection = children
-            .iter()
-            .find(|c| q_rutine_collections.get(**c).is_ok())
-            .unwrap();
-        let (point, _) = q_rutine_points
-            .iter()
-            .find(|(_, p)| p.get() == *collection)
-            .unwrap();
 
         commands.entity(entity).trigger(SpawnAnt {
             transform: *transform,
-            collection: *collection,
-            first_rutine_point: point,
+            collection: entity,
+            first_rutine_point: rutine_collection.get_first_point(),
         });
     }
 }
@@ -239,13 +249,66 @@ fn kill_ant(
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 #[require(Transform)]
-pub struct AntHillPipe;
+struct AntHillPipe;
+
 #[derive(Component, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, Default)]
 #[require(Transform)]
-pub struct AntHillEntry {
-    pub other_entry: Entity,
+struct AntHillEntry {
+    radius: f32,
+    height: f32,
 }
+impl Default for AntHillEntry {
+    fn default() -> Self {
+        Self {
+            radius: 1.0,
+            height: 0.5,
+        }
+    }
+}
+
+#[derive(Component)]
+struct AntHillEntryImpl {
+    other_entry: Entity,
+}
+
+fn spawning_anthill_entry(
+    _: Trigger<GameplaySceneLoadedEvent>,
+    q_pipe_children: Query<&Children, With<AntHillPipe>>,
+    q_hill_entries: Query<&AntHillEntry>,
+    mut commands: Commands,
+) {
+    for pipe_children in q_pipe_children.iter() {
+        // gather hill entities from children
+        let hill_entities = pipe_children
+            .iter()
+            .filter(|c| q_hill_entries.contains(**c))
+            .collect::<Vec<_>>();
+        assert!(
+            hill_entities.len() == 2,
+            "AntHillPipe only supports two AntHillEntries"
+        );
+
+        // set hill entities other_entry from previous gather
+        if let Ok(ant_hill) = q_hill_entries.get(*hill_entities[0]) {
+            commands.entity(*hill_entities[0]).insert((
+                AntHillEntryImpl {
+                    other_entry: *hill_entities[1],
+                },
+                Collider::cylinder(ant_hill.radius, ant_hill.height),
+            ));
+        };
+        if let Ok(ant_hill) = q_hill_entries.get(*hill_entities[1]) {
+            commands.entity(*hill_entities[1]).insert((
+                AntHillEntryImpl {
+                    other_entry: *hill_entities[0],
+                },
+                Collider::cylinder(ant_hill.radius, ant_hill.height),
+            ));
+        };
+    }
+}
+
 #[derive(Event)]
 struct AntHillMovement {
     hill_entry_global_transform: GlobalTransform,
@@ -281,7 +344,7 @@ fn recent_movement_in_anthill_cooldown_timer(
 
 fn anthill_entry_collision(
     ant_query: Query<(Entity, &CollidingEntities), (With<Ant>, Without<RecentMovementInAntHill>)>,
-    hill_query: Query<(Entity, &GlobalTransform, &AntHillEntry), With<AntHillEntry>>,
+    hill_query: Query<(Entity, &GlobalTransform, &AntHillEntryImpl), With<AntHillEntry>>,
     mut commands: Commands,
 ) {
     for (entity, colliding_entities) in &ant_query {
@@ -307,6 +370,8 @@ fn teleport_ant(
     movement: Trigger<AntHillMovement>,
     mut query: Query<(&mut Transform, &Parent), With<RecentMovementInAntHill>>,
     q_parents: Query<&Transform, (With<AntSpawner>, Without<RecentMovementInAntHill>)>,
+    q_rutine_collection: Query<&AntRutineCollection>,
+    mut q_ant_rutine: Query<Option<&mut AntRutineComponent>, With<Ant>>,
 ) {
     let (mut ant_transform, parent) = query.get_mut(movement.entity()).unwrap();
     let spawner_transform = q_parents.get(parent.get()).unwrap();
@@ -314,25 +379,60 @@ fn teleport_ant(
 
     ant_transform.translation = entry_transform.translation() - spawner_transform.translation;
     ant_transform.rotation = entry_transform.rotation() * spawner_transform.rotation.conjugate();
+
+    // If ant has AntRutineComponent then go to next point
+    // only applicable for non-cordycepted ants
+    let Ok(ant_rutine) = q_ant_rutine.get_mut(movement.entity()) else {
+        info!("ant: {}, teleporting without", movement.entity());
+        return;
+    };
+    if let Some(mut ant_rutine) = ant_rutine {
+        let Ok(collection) = q_rutine_collection.get(ant_rutine.collection) else {
+            unreachable!(
+                "missing collection when fetching for ant: {}",
+                movement.entity()
+            )
+        };
+        ant_rutine.set_next_point(collection)
+    }
 }
 
 ///
 /// Collection of rutine points ants will move to, placed on ant spawner
-#[derive(Component, Reflect)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Default, Debug)]
+#[reflect(Component, Default)]
 #[require(Transform(|| Transform::default()))]
-pub struct AntRutineCollection;
+pub struct AntRutineCollection {
+    rutine_points: Vec<Entity>,
+}
 impl AntRutineCollection {
-    fn get_next_point(&self, current: Entity, children: &Children) -> Entity {
-        // assumes all children are AntRutinePoint
-        for (i, child) in children.iter().enumerate() {
-            if *child == current {
-                let c = *children.get((i + 1) % children.len()).unwrap();
-                info!("child {} {:?}", (i + 1) % children.len(), c);
-                return c;
-            }
+    fn insert(&mut self, entity: Entity) {
+        match self.rutine_points.binary_search(&entity) {
+            Ok(_) => (),
+            Err(pos) => self.rutine_points.insert(pos, entity),
         }
-        unreachable!()
+    }
+
+    fn get_first_point(&self) -> Entity {
+        let Some(p) = self.rutine_points.iter().next() else {
+            unreachable!("AntRutineCollection contains no points...")
+        };
+        *p
+    }
+
+    fn get_next_point(&self, current: Entity) -> Entity {
+        let Some(start_index) = self.rutine_points.iter().position(|p| *p == current) else {
+            unreachable!()
+        };
+        let e = *self
+            .rutine_points
+            .iter()
+            .cycle()
+            .skip(start_index)
+            .skip(1)
+            .next()
+            .unwrap();
+        e
     }
 }
 
@@ -366,13 +466,19 @@ impl AntRutineComponent {
         const POSITION_MARGIN: f32 = 1.;
         (target_positon - position).length() < POSITION_MARGIN
     }
+
+    fn set_next_point(&mut self, collection: &AntRutineCollection) {
+        let new_point = collection.get_next_point(self.current_point);
+        self.current_point = new_point;
+        self.action = AntRutineAction::Move(new_point);
+    }
 }
 #[derive(Component)]
 struct AntRutineWaitTimer(Timer);
 
 fn ant_rutine(
     mut q_antrutine: Query<(&mut AntRutineComponent, &mut Transform), With<Ant>>,
-    q_rutine_collections: Query<(&Children, &AntRutineCollection), Without<Ant>>,
+    q_rutine_collections: Query<&AntRutineCollection, Without<Ant>>,
     q_rutine_points: Query<(&AntRutinePoint, &Transform), Without<Ant>>,
     mut q_rutine_wait_timers: Query<&mut AntRutineWaitTimer>,
     time: Res<Time>,
@@ -409,11 +515,8 @@ fn ant_rutine(
                 info!("Ant waited... will now move to next point");
                 commands.entity(e_timer).despawn();
 
-                let (children, collection) =
-                    q_rutine_collections.get(ant_rutine.collection).unwrap();
-                let new_point = collection.get_next_point(ant_rutine.current_point, children);
-                ant_rutine.current_point = new_point;
-                ant_rutine.action = AntRutineAction::Move(new_point);
+                let collection = q_rutine_collections.get(ant_rutine.collection).unwrap();
+                ant_rutine.set_next_point(collection);
             }
         }
     }

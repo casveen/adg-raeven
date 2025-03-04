@@ -370,6 +370,8 @@ fn teleport_ant(
     movement: Trigger<AntHillMovement>,
     mut query: Query<(&mut Transform, &Parent), With<RecentMovementInAntHill>>,
     q_parents: Query<&Transform, (With<AntSpawner>, Without<RecentMovementInAntHill>)>,
+    q_rutine_collection: Query<&AntRutineCollection>,
+    mut q_ant_rutine: Query<Option<&mut AntRutineComponent>, With<Ant>>,
 ) {
     let (mut ant_transform, parent) = query.get_mut(movement.entity()).unwrap();
     let spawner_transform = q_parents.get(parent.get()).unwrap();
@@ -377,6 +379,22 @@ fn teleport_ant(
 
     ant_transform.translation = entry_transform.translation() - spawner_transform.translation;
     ant_transform.rotation = entry_transform.rotation() * spawner_transform.rotation.conjugate();
+
+    // If ant has AntRutineComponent then go to next point
+    // only applicable for non-cordycepted ants
+    let Ok(ant_rutine) = q_ant_rutine.get_mut(movement.entity()) else {
+        info!("ant: {}, teleporting without", movement.entity());
+        return;
+    };
+    if let Some(mut ant_rutine) = ant_rutine {
+        let Ok(collection) = q_rutine_collection.get(ant_rutine.collection) else {
+            unreachable!(
+                "missing collection when fetching for ant: {}",
+                movement.entity()
+            )
+        };
+        ant_rutine.set_next_point(collection)
+    }
 }
 
 ///
@@ -448,6 +466,12 @@ impl AntRutineComponent {
         const POSITION_MARGIN: f32 = 1.;
         (target_positon - position).length() < POSITION_MARGIN
     }
+
+    fn set_next_point(&mut self, collection: &AntRutineCollection) {
+        let new_point = collection.get_next_point(self.current_point);
+        self.current_point = new_point;
+        self.action = AntRutineAction::Move(new_point);
+    }
 }
 #[derive(Component)]
 struct AntRutineWaitTimer(Timer);
@@ -492,9 +516,7 @@ fn ant_rutine(
                 commands.entity(e_timer).despawn();
 
                 let collection = q_rutine_collections.get(ant_rutine.collection).unwrap();
-                let new_point = collection.get_next_point(ant_rutine.current_point);
-                ant_rutine.current_point = new_point;
-                ant_rutine.action = AntRutineAction::Move(new_point);
+                ant_rutine.set_next_point(collection);
             }
         }
     }

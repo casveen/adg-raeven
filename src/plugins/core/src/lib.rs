@@ -8,7 +8,7 @@ pub mod game_world;
 pub mod input;
 pub mod player;
 mod settings;
-mod utils;
+pub mod utils;
 
 pub struct CorePlugin;
 impl bevy::prelude::Plugin for CorePlugin {
@@ -23,6 +23,7 @@ impl bevy::prelude::Plugin for CorePlugin {
             enemies::EnemiesPlugin,
             settings::plugins::VendorPlugin,
             PhysicsPlugins::default(), // avian3d
+            utils::gameplayscene_loadstatus::GameplaySceneLoadStatusPlugin,
         ));
     }
 }

@@ -3,10 +3,12 @@
 resolver = "2"
 
 members = [
-  "src/example-copies/scene3d-test"
+  "src/plugins/core"
 
-, "src/plugins/core"
-, "src/gameplay"]
+, "src/example-copies/scene3d-test"
+, "src/gameplay"
+, "src/ant-demo"
+]
 
 [workspace.dependencies]
 bevy = "0.15.0"

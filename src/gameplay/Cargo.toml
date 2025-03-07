@@ -4,8 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy.workspace=true #= { version = "0.15" }
+bevy_framepace.workspace = true
+avian3d.workspace = true
+bevy.workspace=true
 bevy-inspector-egui.workspace = true
-bevy_hanabi = "0.14.0"
-blenvy = { git = "https://github.com/ptsd/Blenvy.git", branch = "blenvy-bevy-0.15" }
+bevy_hanabi.workspace = true
+blenvy.workspace = true
 # rand = "0.8.5" used in main script, commented-out code
+core.workspace = true

@@ -5,6 +5,12 @@ use blenvy::{BlenvyPlugin, BlueprintInfo, GameWorldTag, HideUntilReady, SpawnBlu
 mod mushroom;
 use mushroom::*;
 
+mod puff;
+use puff::*;
+
+mod water;
+use water::*; 
+
 #[derive(Component, Reflect, Default, Debug)]
 #[reflect(Component)]
 struct Player {
@@ -32,7 +38,9 @@ fn main() {
             DefaultPlugins.set(AssetPlugin::default()),
             BlenvyPlugin::default(),
             WorldInspectorPlugin::new(),
-            MushroomPlugin
+            MushroomPlugin,
+            PuffPlugin,
+            WaterPlugin,
         ))
         //.register_type::<Player>()
         .add_systems(Startup, setup_game)

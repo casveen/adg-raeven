@@ -29,3 +29,6 @@ Cargo.lock
 # Blender
 *.blend[0-9]*
 src/gameplay/assets
+assets/blueprints/*
+assets/materials/*
+assets/levels/*

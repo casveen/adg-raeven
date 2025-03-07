@@ -4,7 +4,6 @@ resolver = "2"
 
 members = [
   "src/example-copies/scene3d-test"
-
 , "src/plugins/core"
 , "src/gameplay"]
 
@@ -14,7 +13,7 @@ bevy-inspector-egui = "0.29.1"
 bevy_framepace = "0.18.0"
 avian3d = "0.2.0"
 blenvy = { git = "https://github.com/ptsd/Blenvy.git", branch = "blenvy-bevy-0.15" }
-
+bevy_hanabi = "0.14.0"
 core = { path = "src/plugins/core" }
 
 [profile.dev]

@@ -30,11 +30,16 @@ const BOXY_PATH: &str = "models/boxy.glb";
 
 fn spawn_player_mesh(
     _: Trigger<OnAdd, Player>,
-    player: Single<Entity, With<Player>>,
+    player: Query<Entity, With<Player>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut graphs: ResMut<Assets<AnimationGraph>>,
 ) {
+    if player.is_empty() {
+        return;
+    }
+    let player = player.single();
+
     // boxy
     // anim index matching .gltf
     let (graph, node_indices) = AnimationGraph::from_clips([
@@ -48,7 +53,7 @@ fn spawn_player_mesh(
         animations: node_indices,
         graph: graph_handle,
     });
-    commands.entity(*player).insert((
+    commands.entity(player).insert((
         SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset(BOXY_PATH))),
         Boxy,
         AnimationComponent {
@@ -59,14 +64,19 @@ fn spawn_player_mesh(
 
 fn setup_once_loaded(
     _: Trigger<OnInsert, AnimationPlayer>,
-    player: Single<Entity, With<Player>>,
+    player: Query<Entity, With<Player>>,
     mut commands: Commands,
     animations: Res<Animations>,
     mut anim_players: Query<(Entity, &mut AnimationPlayer), With<AnimationPlayer>>,
 ) {
+    if player.is_empty() {
+        unreachable!("Player does not exist when inserting animation player")
+    }
+    let player = player.single();
+
     println!("AnimationPlayer loaded...");
     let (entity, mut anim_player) = anim_players.single_mut();
-    println!("player {:?}", *player);
+    println!("player {:?}", player);
     println!("entt {:?}", entity);
     let mut transitions = AnimationTransitions::new();
     transitions
@@ -80,16 +90,21 @@ fn setup_once_loaded(
         .entity(entity)
         .insert(AnimationGraphHandle(animations.graph.clone()))
         .insert(transitions);
-    commands.entity(*player).insert_children(0, &[entity]);
+    commands.entity(player).insert_children(0, &[entity]);
 }
 
 fn observe_player_event(
     event: Trigger<PlayerEvent>,
     _: Query<&Parent, With<Player>>,
-    mut fsm: Single<&mut AnimationComponent, With<Player>>,
+    mut fsm: Query<&mut AnimationComponent, With<Player>>,
     mut animation_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
     animations: Res<Animations>,
 ) {
+    if fsm.is_empty() {
+        unreachable!("PlayerEvent observed without AnimationComponent With<Player>")
+    }
+    let mut fsm = fsm.single_mut();
+
     let (mut player, mut transitions) = animation_players.single_mut();
     fsm.fsm.process_event(
         &event.event(),

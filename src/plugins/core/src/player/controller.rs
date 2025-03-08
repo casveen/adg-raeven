@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use crate::{
     camera::isometric_camera::CameraYaw,
     input::input_manager::{self, button, motion, InputManager},
+    utils::gameplayscene_loadstatus::GameplaySceneLoadedEvent,
 };
 
 use super::states;
@@ -10,15 +11,23 @@ use super::states;
 pub struct PlayerControllerPlugin;
 impl Plugin for PlayerControllerPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Player>()
+        app.register_type::<PlayerSpawn>()
             .add_systems(
                 Startup,
                 (
-                    register_input,
                     //
+                    register_input,
                 ),
             )
-            .add_systems(Update, process_input)
+            .add_systems(
+                Update,
+                (
+                    //
+                    process_input,
+                    evaluate_player_spawn_timer,
+                ),
+            )
+            .add_observer(start_player_spawn_timer)
             .add_observer(spawn_player);
     }
 }
@@ -67,9 +76,54 @@ pub enum PlayerEvent {
     CordyCept(PlayerCordyCeptEvent),
 }
 
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+struct PlayerSpawn;
+
+#[derive(Component)]
+struct PlayerSpawnTimer {
+    timer: Timer,
+}
+
 #[derive(Event, Default)]
-pub struct PlayerSpawn {
-    pub transform: Transform,
+struct PlayerSpawnEvent {
+    transform: Transform,
+}
+
+fn start_player_spawn_timer(
+    _: Trigger<GameplaySceneLoadedEvent>,
+    player_spawn: Query<(Entity, &PlayerSpawn), Without<PlayerSpawnTimer>>, // Sketchy with Single here? Make sure blenvy only makes a single copy of this component
+    mut commands: Commands,
+) {
+    if player_spawn.is_empty() {
+        return;
+    }
+    commands
+        .entity(player_spawn.single().0)
+        .insert(PlayerSpawnTimer {
+            timer: Timer::from_seconds(1.0, TimerMode::Once),
+        });
+}
+
+fn evaluate_player_spawn_timer(
+    mut q_player_spawn: Query<(Entity, &mut PlayerSpawnTimer, &GlobalTransform)>,
+    time: Res<Time>,
+    mut commands: Commands,
+) {
+    if q_player_spawn.is_empty() {
+        return;
+    }
+    let mut q_player_spawn = q_player_spawn.single_mut();
+
+    q_player_spawn.1.timer.tick(time.delta());
+    if q_player_spawn.1.timer.finished() {
+        commands
+            .entity(q_player_spawn.0)
+            .remove::<PlayerSpawnTimer>();
+        commands.trigger(PlayerSpawnEvent {
+            transform: q_player_spawn.2.compute_transform(),
+        });
+    }
 }
 
 static MOVEMENT: input_manager::Action = input_manager::Action("movement");
@@ -115,7 +169,11 @@ fn register_input(mut im: ResMut<input_manager::InputManager>) {
     );
 }
 
-fn spawn_player(player_spawn: Trigger<PlayerSpawn>, query: Query<&Player>, mut commands: Commands) {
+fn spawn_player(
+    player_spawn: Trigger<PlayerSpawnEvent>,
+    query: Query<&Player>,
+    mut commands: Commands,
+) {
     // lazy assertion
     if !query.is_empty() {
         unreachable!("Trying to spawn a new player entity. STOP!");
@@ -136,11 +194,18 @@ fn spawn_player(player_spawn: Trigger<PlayerSpawn>, query: Query<&Player>, mut c
 }
 
 fn process_input(
+    q_player: Query<&Player>,
     im: Res<InputManager>,
     yaw: Res<CameraYaw>,
     mut commands: Commands,
     mut moved_last_frame: Local<bool>,
 ) {
+    if q_player.is_empty() {
+        // Log something here?
+        // For when Player entity does not exist...
+        return;
+    }
+
     if im.is_action_just_pressed(ABILITY_FLOATY) {
         commands.trigger(PlayerEvent::Floaty(PlayerFloatyEvent { active: true }));
     } else if im.is_action_just_released(ABILITY_FLOATY) {

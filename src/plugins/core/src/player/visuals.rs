@@ -100,8 +100,9 @@ fn observe_player_event(
     mut animation_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
     animations: Res<Animations>,
 ) {
-    if fsm.is_empty() {
-        unreachable!("PlayerEvent observed without AnimationComponent With<Player>")
+    if fsm.is_empty() || animation_players.is_empty() {
+        return
+        // unreachable!("PlayerEvent observed without AnimationComponent With<Player>")
     }
     let mut fsm = fsm.single_mut();
 

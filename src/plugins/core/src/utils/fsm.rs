@@ -15,10 +15,10 @@
 #[macro_export]
 macro_rules! new_state {
     ($commands:expr, $fsm:expr, $children:expr, $next_state:expr) => {{
-        for c in *$children {
+        for c in $children {
             $commands.entity(*c).remove_parent().despawn();
         }
         let new_state = $commands.add_observer($next_state).id();
-        $commands.entity(*$fsm).insert_children(0, &[new_state]);
+        $commands.entity($fsm).insert_children(0, &[new_state]);
     }};
 }

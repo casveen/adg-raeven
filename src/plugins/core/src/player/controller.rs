@@ -24,11 +24,13 @@ impl Plugin for PlayerControllerPlugin {
                 (
                     //
                     process_input,
-                    evaluate_player_spawn_timer,
+                    evaluate_player_respawn_timer,
                 ),
             )
-            .add_observer(start_player_spawn_timer)
-            .add_observer(spawn_player);
+            .add_observer(start_player_spawn_timer_on_loading_scene)
+            .add_observer(spawn_player_on_respawn_event)
+            .add_observer(spawn_player)
+            .add_observer(kill_player);
     }
 }
 
@@ -80,50 +82,90 @@ pub enum PlayerEvent {
 #[reflect(Component)]
 struct PlayerSpawn;
 
-#[derive(Component)]
-struct PlayerSpawnTimer {
-    timer: Timer,
-}
-
 #[derive(Event, Default)]
 struct PlayerSpawnEvent {
     transform: Transform,
 }
 
-fn start_player_spawn_timer(
+/**
+ * To kill the player, simply trigger the KillPlayer event. Globally or on the Entity.
+ * Player death deletes its entity and spawns another entity holding a timer
+ * which launches PlayerRespawnEvent
+ */
+#[derive(Event)]
+pub struct KillPlayerEvent {
+    pub description: String,
+}
+
+#[derive(Component)]
+struct PlayerRespawnTimer {
+    respawn_timer: Timer,
+}
+impl Default for PlayerRespawnTimer {
+    fn default() -> Self {
+        Self {
+            respawn_timer: Timer::from_seconds(1.0, TimerMode::Once),
+        }
+    }
+}
+
+#[derive(Event)]
+struct PlayerRespawnEvent;
+
+fn kill_player(
+    trigger: Trigger<KillPlayerEvent>,
+    player: Query<Entity, With<Player>>,
+    mut commands: Commands,
+) {
+    if player.is_empty() {
+        // unreachable!("Misfire of KillPlayer event. Attempted to kill a non-existant player.")
+        return;
+    }
+    let player = player.single();
+
+    info!("KillPlayerEvent[ {} ]", trigger.event().description);
+
+    commands.entity(player).despawn_recursive();
+    commands.spawn(PlayerRespawnTimer::default());
+}
+
+fn evaluate_player_respawn_timer(
+    mut player_respawner: Query<(Entity, &mut PlayerRespawnTimer)>,
+    time: Res<Time>,
+    mut commands: Commands,
+) {
+    if player_respawner.is_empty() {
+        return;
+    }
+    let mut player_respawner = player_respawner.single_mut();
+    player_respawner.1.respawn_timer.tick(time.delta());
+    if player_respawner.1.respawn_timer.finished() {
+        commands.entity(player_respawner.0).despawn();
+        commands.trigger(PlayerRespawnEvent);
+    }
+}
+
+// Actually spawning player
+fn start_player_spawn_timer_on_loading_scene(
     _: Trigger<GameplaySceneLoadedEvent>,
-    player_spawn: Query<(Entity, &PlayerSpawn), Without<PlayerSpawnTimer>>, // Sketchy with Single here? Make sure blenvy only makes a single copy of this component
+    mut commands: Commands,
+) {
+    commands.spawn(PlayerRespawnTimer::default());
+}
+
+fn spawn_player_on_respawn_event(
+    _: Trigger<PlayerRespawnEvent>,
+    player_spawn: Query<&GlobalTransform, With<PlayerSpawn>>,
     mut commands: Commands,
 ) {
     if player_spawn.is_empty() {
         return;
     }
-    commands
-        .entity(player_spawn.single().0)
-        .insert(PlayerSpawnTimer {
-            timer: Timer::from_seconds(1.0, TimerMode::Once),
-        });
-}
+    let player_spawn = player_spawn.single();
 
-fn evaluate_player_spawn_timer(
-    mut q_player_spawn: Query<(Entity, &mut PlayerSpawnTimer, &GlobalTransform)>,
-    time: Res<Time>,
-    mut commands: Commands,
-) {
-    if q_player_spawn.is_empty() {
-        return;
-    }
-    let mut q_player_spawn = q_player_spawn.single_mut();
-
-    q_player_spawn.1.timer.tick(time.delta());
-    if q_player_spawn.1.timer.finished() {
-        commands
-            .entity(q_player_spawn.0)
-            .remove::<PlayerSpawnTimer>();
-        commands.trigger(PlayerSpawnEvent {
-            transform: q_player_spawn.2.compute_transform(),
-        });
-    }
+    commands.trigger(PlayerSpawnEvent {
+        transform: player_spawn.compute_transform(),
+    });
 }
 
 static MOVEMENT: input_manager::Action = input_manager::Action("movement");
@@ -171,17 +213,17 @@ fn register_input(mut im: ResMut<input_manager::InputManager>) {
 
 fn spawn_player(
     player_spawn: Trigger<PlayerSpawnEvent>,
-    query: Query<&Player>,
+    player: Query<(Entity, &Player)>,
     mut commands: Commands,
 ) {
     // lazy assertion
-    if !query.is_empty() {
+    if !player.is_empty() {
         unreachable!("Trying to spawn a new player entity. STOP!");
     }
 
     // Spawning of Player Fsm, use new_state! after this
     let state = commands.add_observer(states::idle_run::process_event).id();
-    let fsm_entity = commands.spawn(PlayerFsm).insert_children(0, &[state]).id();
+    // let fsm_entity = commands.spawn(PlayerFsm).insert_children(0, &[state]).id();
 
     commands
         .spawn((
@@ -190,7 +232,10 @@ fn spawn_player(
             },
             player_spawn.transform,
         ))
-        .insert_children(0, &[fsm_entity]);
+        // .insert_children(0, &[fsm_entity]);
+        .with_children(|player| {
+            player.spawn(PlayerFsm).insert_children(0, &[state]);
+        });
 }
 
 fn process_input(

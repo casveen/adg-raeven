@@ -12,12 +12,20 @@ const ROTATION_SPEED: f32 = 22.0;
 
 pub fn process_event(
     event: Trigger<PlayerEvent>,
-    fsm: Single<Entity, With<PlayerFsm>>,
-    current_state: Single<&Children, With<PlayerFsm>>,
+    fsm: Query<Entity, With<PlayerFsm>>,
+    current_state: Query<&Children, With<PlayerFsm>>,
+    mut transform: Query<&mut Transform, With<Player>>,
     mut commands: Commands,
-    mut transform: Single<&mut Transform, With<Player>>,
     time: Res<Time>,
 ) {
+    if fsm.is_empty() || current_state.is_empty() || transform.is_empty() {
+        debug!("idle_run process_event. fsm || current_state || transform .. is_empty");
+        return;
+    }
+    let fsm = fsm.single();
+    let current_state = current_state.single();
+    let mut transform = transform.single_mut();
+
     match event.event() {
         PlayerEvent::Movement(event) => idle_run(&event, &mut *transform, &time),
         PlayerEvent::Floaty(event) => {

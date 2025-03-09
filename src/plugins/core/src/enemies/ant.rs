@@ -15,7 +15,6 @@ pub struct AntPlugin;
 impl Plugin for AntPlugin {
     fn build(&self, app: &mut bevy::app::App) {
         app.register_type::<Ant>()
-            .register_type::<AntRespawnTimer>()
             .register_type::<AntSpawner>()
             .register_type::<AntRutineCollection>()
             .register_type::<AntRutinePoint>()
@@ -88,7 +87,7 @@ fn insert_antspawner(
     }
 }
 
-#[derive(Component, Reflect)]
+#[derive(Component)]
 struct AntRespawnTimer {
     timer: Timer,
 }

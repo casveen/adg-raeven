@@ -2,17 +2,13 @@ use blenvy::{BlenvyPlugin, BlueprintInfo, GameWorldTag, HideUntilReady, SpawnBlu
 use bevy::{ prelude::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
-mod water;
-use water::*; 
-
 fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins.set(AssetPlugin::default()),
             BlenvyPlugin::default(),
             WorldInspectorPlugin::new(),
-            WaterPlugin,
-            //core::CorePlugin,
+            core::CorePlugin,
         ))
         .add_systems(Startup, setup_game)
         .run();

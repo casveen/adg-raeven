@@ -2,12 +2,6 @@ use blenvy::{BlenvyPlugin, BlueprintInfo, GameWorldTag, HideUntilReady, SpawnBlu
 use bevy::{ prelude::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
-mod mushroom;
-use mushroom::*;
-
-mod puff;
-use puff::*;
-
 mod water;
 use water::*; 
 
@@ -17,8 +11,6 @@ fn main() {
             DefaultPlugins.set(AssetPlugin::default()),
             BlenvyPlugin::default(),
             WorldInspectorPlugin::new(),
-            MushroomPlugin,
-            PuffPlugin,
             WaterPlugin,
             //core::CorePlugin,
         ))

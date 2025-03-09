@@ -1,6 +1,6 @@
-use bevy::prelude::*;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use blenvy::{BlenvyPlugin, BlueprintInfo, GameWorldTag, HideUntilReady, SpawnBlueprint};
+use bevy::{ prelude::*};
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 mod mushroom;
 use mushroom::*;
@@ -11,27 +11,6 @@ use puff::*;
 mod water;
 use water::*; 
 
-#[derive(Component, Reflect, Default, Debug)]
-#[reflect(Component)]
-struct Player {
-    strength: f32,
-    perception: f32,
-    endurance: f32,
-    charisma: f32,
-    intelligence: f32,
-    agility: f32,
-    luck: f32,
-}
-
-/*#[derive(Component, Reflect, Default, Debug)]
-#[reflect(Component)]
-struct Bloomable {
-    bloomed: bool,
-    bloom_tween: f32, //[0,1]
-    to_bloom: String,
-
-}*/
-
 fn main() {
     App::new()
         .add_plugins((
@@ -41,8 +20,8 @@ fn main() {
             MushroomPlugin,
             PuffPlugin,
             WaterPlugin,
+            //core::CorePlugin,
         ))
-        //.register_type::<Player>()
         .add_systems(Startup, setup_game)
         .run();
 }
@@ -56,13 +35,3 @@ fn setup_game(mut commands: Commands) {
         GameWorldTag,
     ));
 }
-
-
-
-/*
-    BlueprintInfo::from_path("Health_Pickup.glb"), // mandatory !!
-    // or the alterive: BlueprintInfo{name:"health pickup1".into(), path:"Health_Pickup.glb".into()}
-    SpawnBlueprint, // mandatory !!
-    
-    TransformBundle::from_transform(Transform::from_xyz(x, 2.0, y)), // optional
-*/

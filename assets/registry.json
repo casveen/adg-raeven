@@ -144,32 +144,6 @@
       "type": "array",
       "typeInfo": "Tuple"
     },
-    "(bevy_picking::mesh_picking::RayCastPickable, bevy_picking::mesh_picking::MeshPickingSettings, bevy_picking::mesh_picking::ray_cast::SimplifiedMesh)": {
-      "isComponent": false,
-      "isResource": false,
-      "items": false,
-      "long_name": "(bevy_picking::mesh_picking::RayCastPickable, bevy_picking::mesh_picking::MeshPickingSettings, bevy_picking::mesh_picking::ray_cast::SimplifiedMesh)",
-      "prefixItems": [
-        {
-          "type": {
-            "$ref": "#/$defs/bevy_picking::mesh_picking::RayCastPickable"
-          }
-        },
-        {
-          "type": {
-            "$ref": "#/$defs/bevy_picking::mesh_picking::MeshPickingSettings"
-          }
-        },
-        {
-          "type": {
-            "$ref": "#/$defs/bevy_picking::mesh_picking::ray_cast::SimplifiedMesh"
-          }
-        }
-      ],
-      "short_name": "(RayCastPickable, MeshPickingSettings, SimplifiedMesh)",
-      "type": "array",
-      "typeInfo": "Tuple"
-    },
     "(bevy_time::time::Time<avian3d::schedule::time::Substeps>, avian3d::dynamics::solver::schedule::SubstepCount)": {
       "isComponent": false,
       "isResource": false,
@@ -12104,6 +12078,19 @@
       "type": "object",
       "typeInfo": "Struct"
     },
+    "bevy_picking::focus::PickingInteraction": {
+      "isComponent": true,
+      "isResource": false,
+      "long_name": "bevy_picking::focus::PickingInteraction",
+      "oneOf": [
+        "Pressed",
+        "Hovered",
+        "None"
+      ],
+      "short_name": "PickingInteraction",
+      "type": "string",
+      "typeInfo": "Enum"
+    },
     "bevy_picking::input::PointerInputPlugin": {
       "additionalProperties": false,
       "isComponent": false,
@@ -12128,71 +12115,6 @@
       "short_name": "PointerInputPlugin",
       "type": "object",
       "typeInfo": "Struct"
-    },
-    "bevy_picking::mesh_picking::MeshPickingSettings": {
-      "additionalProperties": false,
-      "isComponent": false,
-      "isResource": true,
-      "long_name": "bevy_picking::mesh_picking::MeshPickingSettings",
-      "properties": {
-        "ray_cast_visibility": {
-          "type": {
-            "$ref": "#/$defs/bevy_picking::mesh_picking::ray_cast::RayCastVisibility"
-          }
-        },
-        "require_markers": {
-          "type": {
-            "$ref": "#/$defs/bool"
-          }
-        }
-      },
-      "required": [
-        "require_markers",
-        "ray_cast_visibility"
-      ],
-      "short_name": "MeshPickingSettings",
-      "type": "object",
-      "typeInfo": "Struct"
-    },
-    "bevy_picking::mesh_picking::RayCastPickable": {
-      "additionalProperties": false,
-      "isComponent": true,
-      "isResource": false,
-      "long_name": "bevy_picking::mesh_picking::RayCastPickable",
-      "properties": {},
-      "required": [],
-      "short_name": "RayCastPickable",
-      "type": "object",
-      "typeInfo": "Struct"
-    },
-    "bevy_picking::mesh_picking::ray_cast::RayCastVisibility": {
-      "isComponent": false,
-      "isResource": false,
-      "long_name": "bevy_picking::mesh_picking::ray_cast::RayCastVisibility",
-      "oneOf": [
-        "Any",
-        "Visible",
-        "VisibleInView"
-      ],
-      "short_name": "RayCastVisibility",
-      "type": "string",
-      "typeInfo": "Enum"
-    },
-    "bevy_picking::mesh_picking::ray_cast::SimplifiedMesh": {
-      "isComponent": true,
-      "isResource": false,
-      "items": false,
-      "long_name": "bevy_picking::mesh_picking::ray_cast::SimplifiedMesh",
-      "prefixItems": [
-        {
-          "type": {
-            "$ref": "#/$defs/bevy_asset::handle::Handle<bevy_mesh::mesh::Mesh>"
-          }
-        }
-      ],
-      "short_name": "SimplifiedMesh",
-      "type": "array",
-      "typeInfo": "TupleStruct"
     },
     "bevy_picking::pointer::PointerId": {
       "isComponent": true,
@@ -13310,7 +13232,7 @@
       "typeInfo": "TupleStruct"
     },
     "bevy_scene::components::DynamicSceneRoot": {
-      "isComponent": false,
+      "isComponent": true,
       "isResource": false,
       "items": false,
       "long_name": "bevy_scene::components::DynamicSceneRoot",
@@ -13326,7 +13248,7 @@
       "typeInfo": "TupleStruct"
     },
     "bevy_scene::components::SceneRoot": {
-      "isComponent": false,
+      "isComponent": true,
       "isResource": false,
       "items": false,
       "long_name": "bevy_scene::components::SceneRoot",
@@ -19242,14 +19164,20 @@
       "isResource": false,
       "long_name": "core::enemies::ant::AntHillEntry",
       "properties": {
-        "other_entry": {
+        "height": {
           "type": {
-            "$ref": "#/$defs/bevy_ecs::entity::Entity"
+            "$ref": "#/$defs/f32"
+          }
+        },
+        "radius": {
+          "type": {
+            "$ref": "#/$defs/f32"
           }
         }
       },
       "required": [
-        "other_entry"
+        "radius",
+        "height"
       ],
       "short_name": "AntHillEntry",
       "type": "object",
@@ -19266,32 +19194,21 @@
       "type": "object",
       "typeInfo": "Struct"
     },
-    "core::enemies::ant::AntRespawnTimer": {
-      "additionalProperties": false,
-      "isComponent": false,
-      "isResource": false,
-      "long_name": "core::enemies::ant::AntRespawnTimer",
-      "properties": {
-        "timer": {
-          "type": {
-            "$ref": "#/$defs/bevy_time::timer::Timer"
-          }
-        }
-      },
-      "required": [
-        "timer"
-      ],
-      "short_name": "AntRespawnTimer",
-      "type": "object",
-      "typeInfo": "Struct"
-    },
     "core::enemies::ant::AntRutineCollection": {
       "additionalProperties": false,
       "isComponent": true,
       "isResource": false,
       "long_name": "core::enemies::ant::AntRutineCollection",
-      "properties": {},
-      "required": [],
+      "properties": {
+        "rutine_points": {
+          "type": {
+            "$ref": "#/$defs/alloc::vec::Vec<bevy_ecs::entity::Entity>"
+          }
+        }
+      },
+      "required": [
+        "rutine_points"
+      ],
       "short_name": "AntRutineCollection",
       "type": "object",
       "typeInfo": "Struct"
@@ -19304,6 +19221,31 @@
       "properties": {},
       "required": [],
       "short_name": "AntRutinePoint",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "core::enemies::ant::AntSpawner": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "long_name": "core::enemies::ant::AntSpawner",
+      "properties": {
+        "current_num_ants": {
+          "type": {
+            "$ref": "#/$defs/u8"
+          }
+        },
+        "max_ants": {
+          "type": {
+            "$ref": "#/$defs/u8"
+          }
+        }
+      },
+      "required": [
+        "max_ants",
+        "current_num_ants"
+      ],
+      "short_name": "AntSpawner",
       "type": "object",
       "typeInfo": "Struct"
     },
@@ -20446,37 +20388,16 @@
       "type": "object",
       "typeInfo": "Enum"
     },
-    "core::player::controller::Player": {
+    "core::player::controller::PlayerSpawn": {
       "additionalProperties": false,
       "isComponent": true,
       "isResource": false,
-      "long_name": "core::player::controller::Player",
-      "properties": {
-        "state": {
-          "type": {
-            "$ref": "#/$defs/core::player::controller::PlayerState"
-          }
-        }
-      },
-      "required": [
-        "state"
-      ],
-      "short_name": "Player",
+      "long_name": "core::player::controller::PlayerSpawn",
+      "properties": {},
+      "required": [],
+      "short_name": "PlayerSpawn",
       "type": "object",
       "typeInfo": "Struct"
-    },
-    "core::player::controller::PlayerState": {
-      "isComponent": false,
-      "isResource": false,
-      "long_name": "core::player::controller::PlayerState",
-      "oneOf": [
-        "NotSpawned",
-        "Dead",
-        "Alive"
-      ],
-      "short_name": "PlayerState",
-      "type": "string",
-      "typeInfo": "Enum"
     },
     "f32": {
       "isComponent": false,

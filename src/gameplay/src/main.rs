@@ -6,7 +6,7 @@ fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins.set(AssetPlugin::default()),
-            BlenvyPlugin::default(),
+            //BlenvyPlugin::default(),
             WorldInspectorPlugin::new(),
             core::CorePlugin,
         ))

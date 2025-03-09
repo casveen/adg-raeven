@@ -1,5 +1,6 @@
 pub mod puffy_shrooms;
 pub mod spore_cloud;
+pub mod mushroom;
 
 use bevy::prelude::*;
 
@@ -9,6 +10,7 @@ impl Plugin for GameWorldPlugin {
         app.add_plugins((
             spore_cloud::SporeCloudPlugin,
             puffy_shrooms::PuffyShroomsPlugin,
+            mushroom::MushroomPlugin,
         ));
     }
 }

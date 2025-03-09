@@ -37,6 +37,18 @@ enum WorldMovementState {
     // Free? free movement when not in puzzle mode
 }
 
+impl Default for WorldGrid {
+    fn default() -> Self {
+        WorldGrid{grid_size:2.0}
+    }
+}
+
+impl Default for WorldMovementState {
+    fn default() -> Self {
+        WorldMovementState::Stopped
+    }
+}
+
 /**********
  * EVENTS *
  **********/
@@ -242,6 +254,8 @@ impl Plugin for CreaturePlugin {
     fn build(&self, app: &mut App) {
         app
         .register_type::<MovingCreature>()
+        .init_resource::<WorldMovementState>()
+        .init_resource::<WorldGrid>()
         .add_systems(Update, (moving_creatures_system, look_for_stopped_world_system))
         .add_observer(on_world_start_moving);
     }      

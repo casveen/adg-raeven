@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::player::controller::Player;
+use crate::utils::grid::Direction;
 /***
  * Resources:
  * 
@@ -109,45 +109,7 @@ struct Moving {
 }*/
 
 
-/***********
- * HELPERS *
- ***********/
-#[derive(Reflect, Debug, Clone)]
-enum Direction {
-    North, 
-    East, 
-    South, 
-    West, 
-}
 
-impl Direction { //Opposite for Direction
-    fn opposite(self) -> Self {
-        match self {
-            Direction::North => Direction::South,
-            Direction::East  => Direction::West,
-            Direction::South => Direction::North,
-            Direction::West  => Direction::East
-        }
-    }
-}
-
-impl From<Direction> for Vec3 {
-    fn from(direction: Direction) -> Vec3 {
-        match direction {
-            Direction::North => Vec3::Y,
-            Direction::East =>  Vec3::X,
-            Direction::South => -Vec3::Y,
-            Direction::West =>  -Vec3::X,
-        }
-    }
-}
-
-impl Into<Vec2> for Direction {
-    fn into(self) -> Vec2 {
-        let v3 : Vec3 = self.into();
-        v3.xy()
-    }
-}
 
 
 

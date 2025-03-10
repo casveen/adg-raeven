@@ -4,6 +4,7 @@ use crate::{
     camera::isometric_camera::CameraYaw,
     input::input_manager::{self, button, motion, InputManager},
     utils::gameplayscene_loadstatus::GameplaySceneLoadedEvent,
+    utils::grid::Direction
 };
 
 use super::states;
@@ -53,7 +54,7 @@ pub struct PlayerFsm;
 
 #[derive(Event)]
 pub struct PlayerMovementEvent {
-    pub motion: Option<Vec3>,
+    pub motion: Option<Direction>,
 }
 impl PlayerMovementEvent {
     pub fn empty() -> Self {
@@ -267,7 +268,7 @@ fn process_input(
         }));
     }
 
-    let Some(direction) = im.get_motion(MOVEMENT).get_motion_opt_y(yaw.get()) else {
+    let Some(direction_vector) = im.get_motion(MOVEMENT).get_motion_opt_y(yaw.get()) else {
         if *moved_last_frame {
             commands.trigger(PlayerEvent::Movement(PlayerMovementEvent { motion: None }));
         }
@@ -277,6 +278,6 @@ fn process_input(
     *moved_last_frame = true;
 
     commands.trigger(PlayerEvent::Movement(PlayerMovementEvent {
-        motion: Some(direction),
+        motion: Some(Direction::from(direction_vector)),
     }));
 }

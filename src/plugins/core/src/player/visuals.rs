@@ -240,15 +240,15 @@ mod fsm {
         ) {
             let AnimUpdateAggregate(animations, anim_player, anim_transitions) = &mut *anim_update;
 
-            match movement_event.motion {
-                Some(delta) => {
+            match &movement_event.motion {
+                Some(_) => {
                     if !anim_player.is_playing_animation(animations.animations[ANIM_RUN]) {
                         anim_transitions
                             .play(anim_player, animations.animations[ANIM_RUN], Duration::ZERO)
                             .repeat();
                     }
                     for (_, anim) in anim_player.playing_animations_mut() {
-                        anim.set_speed(delta.length() * ANIMSPEED_RUN);
+                        anim.set_speed(ANIMSPEED_RUN); // TODO removed vector direction, but length might've been used for anim speed
                     }
                 }
                 None => {

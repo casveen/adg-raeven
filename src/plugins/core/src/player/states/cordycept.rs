@@ -26,10 +26,10 @@ pub fn process_event(
         PlayerEvent::Movement(event) => {
             // get entities?
             // ability might just be global, as long as someone has the status
-            if let Some(motion) = event.motion {
-                let movement = motion * RUN_SPEED * time.delta_secs();
+            if let Some(motion) = &event.motion {
+                let movement = Vec3::from(motion) * RUN_SPEED * time.delta_secs();
                 transform.translation += movement;
-                movement::rotate_player(motion, &mut *transform, ROTATION_SPEED, &time);
+                movement::rotate_player(Vec3::from(motion), &mut *transform, ROTATION_SPEED, &time);
 
                 commands.trigger(CordyCeptMovement(movement, transform.rotation));
             }

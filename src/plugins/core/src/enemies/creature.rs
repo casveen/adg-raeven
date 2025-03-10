@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use crate::player::controller::{PlayerEvent, PlayerMovementEvent};
 use crate::utils::grid::Direction;
 /***
  * Resources:
@@ -53,10 +54,10 @@ impl Default for WorldMovementState {
  * EVENTS *
  **********/
  /* correponds to the event where the player STARTS moving */
-#[derive(Event)]
-struct OnPlayerMove {
-    direction: Direction
-}
+//#[derive(Event)]
+//struct OnPlayerMove {
+//    direction: Direction
+//}
 
 /**************
  * COMPONENTS *
@@ -132,40 +133,39 @@ struct Moving {
  * 
  */
 fn on_world_start_moving(
-    player_moved: Trigger<OnPlayerMove>,
+    player_event: Trigger<PlayerEvent>,
     mut commands: Commands,
     mut creature_query: Query<(Entity, &MovingCreature)>,
-    mut player_query: Query<&Player>,
-    mut world_state: ResMut<WorldMovementState>,
+    world_state: ResMut<WorldMovementState>,
 ) {
-    //let player=player_query.get_;
-    let player_direction: &Direction = &player_moved.direction;
-    for (entity, creature) in creature_query.iter_mut() {
-        //set movement TODO do in initial movement
-        let new_direction: Direction = match creature {
-            MovingCreature::Player => player_direction.clone(),
-            MovingCreature::Ant => player_direction.clone(),
-            MovingCreature::Spider => player_direction.clone().opposite(),
-            MovingCreature::Rolypoly => player_direction.clone(),
-            //Creature::Snake => player_direction,
-            //Creature::Wasp => player_direction,
-            //Creature::Tick => player_direction,
-        };
-        commands.entity(entity).insert(
-            Moving{direction: new_direction, speed: 2.0}
-        );
+    if let PlayerEvent::Movement(PlayerMovementEvent{motion: Some(player_direction)}) = player_event.event() {
+        for (entity, creature) in creature_query.iter_mut() {
+            //set movement TODO do in initial movement
+            let new_direction: Direction = match creature {
+                MovingCreature::Player => player_direction.clone(),
+                MovingCreature::Ant => player_direction.clone(),
+                MovingCreature::Spider => player_direction.clone().opposite(),
+                MovingCreature::Rolypoly => player_direction.clone(),
+                //Creature::Snake => player_direction,
+                //Creature::Wasp => player_direction,
+                //Creature::Tick => player_direction,
+            };
+            commands.entity(entity).insert(
+                Moving{direction: new_direction, speed: 2.0}
+            );
+        }
+        let w = world_state.into_inner();
+        *w = WorldMovementState::Moving;
     }
-    let mut w = world_state.into_inner();
-    *w = WorldMovementState::Moving;
 }
 
 // let teh creatures move! 
 fn moving_creatures_system(
     mut commands: Commands,
-    mut creature_query: Query<(Entity, &MovingCreature, &Moving, &mut Transform)>,
+    mut creature_query: Query<(Entity, &Moving, &mut Transform), With<MovingCreature>>,
     world_grid: Res<WorldGrid>,
 ) {
-    for (entity, creature, moving, mut transform) in creature_query.iter_mut() {
+    for (entity, moving, mut transform) in creature_query.iter_mut() {
 
         // move the creature, and check if it stops
 
@@ -195,7 +195,6 @@ fn moving_creatures_system(
 
 // let teh creatures move! 
 fn look_for_stopped_world_system(
-    commands: Commands,
     moving_creatures_query: Query<&Moving>,
     mut world_state: ResMut<WorldMovementState>,
 ) {

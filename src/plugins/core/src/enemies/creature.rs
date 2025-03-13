@@ -40,7 +40,7 @@ enum WorldMovementState {
 
 impl Default for WorldGrid {
     fn default() -> Self {
-        WorldGrid{grid_size:2.0}
+        WorldGrid{grid_size:1.0}
     }
 }
 
@@ -79,7 +79,8 @@ enum MovingCreature {
 #[reflect(Component)]
 struct Moving {
     direction: Direction, 
-    speed: f32
+    speed: f32,
+    moving_from: Vec3 //the translation when the movement started, used to not stop immideately
 }
 
 /*fn handle_collision(creature_1: Creature, creature_2:Creature) {
@@ -135,11 +136,15 @@ struct Moving {
 fn on_world_start_moving(
     player_event: Trigger<PlayerEvent>,
     mut commands: Commands,
-    mut creature_query: Query<(Entity, &MovingCreature)>,
+    mut creature_query: Query<(Entity, &MovingCreature, &Transform)>,
     world_state: ResMut<WorldMovementState>,
 ) {
-    if let PlayerEvent::Movement(PlayerMovementEvent{motion: Some(player_direction)}) = player_event.event() {
-        for (entity, creature) in creature_query.iter_mut() {
+    info!("START MOVING!");
+    if let WorldMovementState::Stopped = *world_state {
+        if let PlayerEvent::Movement(PlayerMovementEvent{motion: Some(player_direction)}) = player_event.event() {
+        info!("MOVING --- ?:player_direction");
+        for (entity, creature, transform) in creature_query.iter_mut() {
+            info!("MOVING --- ?:creature");
             //set movement TODO do in initial movement
             let new_direction: Direction = match creature {
                 MovingCreature::Player => player_direction.clone(),
@@ -151,12 +156,13 @@ fn on_world_start_moving(
                 //Creature::Tick => player_direction,
             };
             commands.entity(entity).insert(
-                Moving{direction: new_direction, speed: 2.0}
+                Moving{direction: new_direction, speed: 2.0, moving_from: transform.translation}
             );
         }
         let w = world_state.into_inner();
         *w = WorldMovementState::Moving;
     }
+}
 }
 
 // let teh creatures move! 
@@ -164,31 +170,41 @@ fn moving_creatures_system(
     mut commands: Commands,
     mut creature_query: Query<(Entity, &Moving, &mut Transform), With<MovingCreature>>,
     world_grid: Res<WorldGrid>,
+    world_state: Res<WorldMovementState>,
+    time: Res<Time>,
+
 ) {
-    for (entity, moving, mut transform) in creature_query.iter_mut() {
+    //info!("INIT MOVING!");
+    if let WorldMovementState::Moving = *world_state {
+        for (entity, moving, mut transform) in creature_query.iter_mut() {
+            // move the creature, and check if it stops
 
-        // move the creature, and check if it stops
+            let translation = transform.translation;
+            let grid_size = world_grid.grid_size;
+        
+            //closest grid point in moving direction
+            let closest_grid_point = (translation/grid_size).round()*grid_size;
+            let diff_to_closest_grid_point_before_movement = translation-closest_grid_point;
 
-
-        let grid_size = world_grid.grid_size;
-        let mut translation = transform.translation;
-    
-        //closest grid point in moving direction
-        let closest_grid_point = (translation/grid_size).round()*grid_size;
-        let diff_to_closest_grid_point_before_movement = translation-closest_grid_point;
-    
-        //move the creature one FRAME with movement
-        let Moving{direction, speed} = moving;
-        translation += Vec3::from(direction.clone())*speed; // *dt?
-    
-        let diff_to_closest_grid_point_after_movement = translation-closest_grid_point;
-    
-        //if we've just now passed through the closest grid point, one of the diffs have changed sign
-        if diff_to_closest_grid_point_before_movement.signum() != diff_to_closest_grid_point_after_movement.signum() {
-            //snap to grid, and stop moving
-            translation = closest_grid_point;
-            commands.entity(entity).remove::<Moving>(); // TODO handle safely
-            transform.translation=translation; // TODO this might not be ideal... can we get a reference, or is it technically primitive?
+            //move the creature one FRAME with movement
+            let Moving{direction, speed, moving_from} = moving;
+            info!("Direction {:?}", direction);
+            transform.translation += Vec3::from(direction.clone())*speed*time.delta_secs();
+            //info!("NOW {translation}");
+        
+            let diff_to_closest_grid_point_after_movement = transform.translation-closest_grid_point;
+            info!("before: {diff_to_closest_grid_point_before_movement}, after {diff_to_closest_grid_point_after_movement}");
+            
+            //if we've just now passed through the closest grid point, one of the diffs have changed sign
+            //this should not happen on the first step
+            if diff_to_closest_grid_point_before_movement.signum() != diff_to_closest_grid_point_after_movement.signum() &&
+               *moving_from != translation {
+                info!("STOPPING MOVING ENTITY!");
+                //snap to grid, and stop moving
+                transform.translation = closest_grid_point;
+                commands.entity(entity).remove::<Moving>(); // TODO handle safely
+                transform.translation=translation; // TODO this might not be ideal... can we get a reference, or is it technically primitive?
+            }
         }
     }
 }

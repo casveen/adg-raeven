@@ -8,8 +8,8 @@ pub struct VisualsPlugin;
 impl Plugin for VisualsPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(spawn_player_mesh)
-            .add_observer(setup_once_loaded)
-            .add_observer(observe_player_event);
+            .add_observer(setup_once_loaded);
+            //.add_observer(observe_player_event);
     }
 }
 
@@ -86,15 +86,22 @@ fn setup_once_loaded(
 fn observe_player_event(
     event: Trigger<PlayerEvent>,
     _: Query<&Parent, With<Player>>,
-    mut fsm: Single<&mut AnimationComponent, With<Player>>,
-    mut animation_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
-    animations: Res<Animations>,
+    fsm: Option<Single<&mut AnimationComponent, With<Player>>>,
+    //mut animation_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
+    //animations: Res<Animations>,
 ) {
-    let (mut player, mut transitions) = animation_players.single_mut();
-    fsm.fsm.process_event(
-        &event.event(),
-        &mut fsm::AnimUpdateAggregate(&animations, &mut player, &mut transitions),
-    );
+    /*if let Some(mut fsm) = fsm {
+        if let Ok((mut player, mut transitions)) = animation_players.get_single_mut() {
+            fsm.fsm.process_event(
+                &event.event(),
+                //&mut fsm::AnimUpdateAggregate(&animations, &mut player, &mut transitions),
+            )
+        } else {
+            warn!("player has no animation player!");
+        }
+    } else {
+        warn!("player has no animationomponent!");
+    }*/
 }
 
 mod fsm {

@@ -4,7 +4,6 @@ use crate::{
         controller::{Player, PlayerEvent, PlayerFsm, PlayerMovementEvent},
         states::utils::movement,
     },
-    utils::grid::Direction,
 };
 use bevy::prelude::*;
 

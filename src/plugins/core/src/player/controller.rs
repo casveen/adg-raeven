@@ -166,7 +166,7 @@ fn process_input(
         return;
     };
     *moved_last_frame = true;
-
+    info!("direction vector {:?}", direction_vector);
     commands.trigger(PlayerEvent::Movement(PlayerMovementEvent {
         motion: Some(Direction::from(direction_vector)),
     }));

@@ -1,12 +1,15 @@
 use std::collections::HashMap;
-
-use bevy::math::I8Vec3;
 use bevy::prelude::*;
-use bevy::reflect::Map;
 use bevy::utils::HashSet;
 use crate::player::controller::{PlayerEvent, PlayerMovementEvent};
 use crate::utils::grid::Direction;
 use crate::player::states::cordycept::CordyCeptedComponent;
+use super::handlers::{
+    decide_creature_movement, 
+    handle_movement_type, 
+    decide_infected_creature_movement,
+    creature_can_move
+};
 
 /***
  * Resources:
@@ -22,6 +25,9 @@ use crate::player::states::cordycept::CordyCeptedComponent;
  * and creatureCollision
  * 
  * Components:
+ * - Moving: for entities that are moving. Moving depends on creature, some move one step, others move until collision etc.
+ *           not to be confused with step. The Moving component decides how/how long the creature will step.
+ * - Stepping: for entities that are stepping. The step component is what ACTUALLY moves the creature, and is removed as soon as the creature snaps to the next grid 
  * 
  * 
  * 
@@ -38,24 +44,16 @@ use crate::player::states::cordycept::CordyCeptedComponent;
 
 /*************
  * RESOURCES *
- *************/
-
+ *************
+ *
+ * - WorldGrid: resource representing the game world. A grid where entities place themselves, and the size of the grid in 3d space 
+ * - WorldMovementState: the current movement state of the world.
+ */
 #[derive(Resource)]
-struct WorldGrid (
-    HashMap<Coordinate, HashSet<Entity>>,
-    f32
+pub struct WorldGrid (
+    pub HashMap<Coordinate, HashSet<Entity>>,
+    pub f32
 );
-
-impl WorldGrid {
-    fn grid_size(WorldGrid(_,grid_size) :Self) -> f32 {
-        grid_size
-    }
-
-    /*fn get_creatures_on_coordinate(self, coord: Coordinate) -> Option<&Vec<Entity>> {
-        WorldGrid::grid(self)
-        .get(&coord)
-    }*/
-}
 
 #[derive(Resource, PartialEq)]
 enum WorldMovementState {
@@ -77,21 +75,12 @@ impl Default for WorldMovementState {
     }
 }
 
-/**********
- * EVENTS *
- **********/
- /* correponds to the event where the player STARTS moving */
-//#[derive(Event)]
-//struct OnPlayerMove {
-//    direction: Direction
-//}
-
 /**************
  * COMPONENTS *
  **************/
 #[derive(Component, Reflect, Debug)]
 #[reflect(Component)]
-enum MovingCreature {
+pub enum MovingCreature {
     Player,
     Ant,
     Spider,
@@ -102,7 +91,7 @@ enum MovingCreature {
 }
 
 #[derive(Reflect, Debug, PartialEq)]
-enum MovementType {
+pub enum MovementType {
     OneStep,
     UntilCollision 
 }
@@ -120,42 +109,14 @@ struct Moving {
 #[derive(Component, Reflect, Debug)]
 #[reflect(Component)]
 struct Stepping {
-    moving_from: Vec3, //the translation when the movement started, used to not stop immideately
+    moving_from: Vec3, //the translation (in 3d space, not grid) when the movement started, used to not stop immideately
     //movement_type: MovementType
 }
-
-/*fn handle_collision(creature_1: Creature, creature_2:Creature) {
-    match (creature_1, creature_2) {
-        (Ant, Ant)                        => 0,
-        (Ant, Spider) | (Spider, Ant)     => 0,
-        (Ant, Rolypoly) | (Rolypoly, Ant) => 0,
-        (Ant, Snake) | (Snake, Ant)       => 0,
-        (Ant, Wasp) | (Wasp, Ant)         => 0,
-        (Ant, Tick) | (Tick, Ant)         => 0,
-        (Spider, Spider)                  => 0,
-        (Spider, Snake) | (Snake, Spider) => 0,
-        (Spider, Rolypoly) | (Rolypoly, Spider) => 0,
-        (Spider, Snake) | (Snake, Spider) => 0,
-        (Spider, Wasp) | (Wasp, Spider)   => 0,
-        (Spider, Tick) | (Tick, Spider)   => 0,
-        (Rolypoly, Rolypoly)              => 0,
-        (Rolypoly, Snake) | (Snake, Rolypoly) => 0,
-        (Rolypoly, Wasp) | (Wasp, Rolypoly) => 0,
-        (Rolypoly, Tick) | (Tick, Rolypoly) => 0,
-        (Snake, Snake)                      => 0,
-        (Snake, Wasp) | (Wasp, Snake)       => 0,
-        (Snake, Tick) | (Tick, Snake)       => 0,
-        (Wasp, Wasp)                        => 0,
-        (Wasp, Tick) | (Tick, Wasp)         => 0,
-        (Tick, Tick)                        => 0,
-    }
-}*/
 
 //used for collision checking
 #[derive(Component, Reflect, Debug, Eq, Hash, PartialEq, Clone)]
 #[reflect(Component)]
-struct Coordinate(IVec3);
-
+pub struct Coordinate(pub IVec3);
 
 #[derive(Component, Reflect, Debug)]
 #[reflect(Component)]
@@ -163,28 +124,19 @@ struct Infected;
 
 #[derive(Component, Reflect, Debug)]
 #[reflect(Component)]
-struct Obstacle;
+pub struct Obstacle;
 
 #[derive(Component, Reflect, Debug)]
 #[reflect(Component)]
-struct Walkable;
+pub struct Walkable;
 
 /************
- * HANDLERS *
- ************
- * 
- * 
- * 
- * 
- */
+ * TRIGGERS *
+ ***********/
 
-/***********
- * SYSTEMS *
- ***********
- * 
- * 
- * 
- * 
+/**
+ * A trigger that triggers when the player makes a  first move from a stopped state. 
+ * This is when the game world will start to move, and will not stop before every creature has finished its movement(some movements consists of several steps).
  */
 fn on_world_start_moving(
     player_event: Trigger<PlayerEvent>,
@@ -193,16 +145,13 @@ fn on_world_start_moving(
     obstacle_query: Query<(Entity, &Obstacle)>,
     walkable_query: Query<(Entity, &Walkable)>,
     world_grid: Res<WorldGrid>,
-    world_state: ResMut<WorldMovementState>,
+    mut world_state: ResMut<WorldMovementState>,
 )   {
     if let WorldMovementState::Stopped = *world_state {
-        info!("world is stopped:(");
         if let PlayerEvent::Movement(PlayerMovementEvent{motion: Some(player_direction)}) = player_event.event() {
-            info!("Player moved!");
-            //info!("enteties moving: {}", creature_query.)
+            //the player has given input, lets move ALL creatures
             for (entity, creature, transform, coordinate, infection) in creature_query.iter_mut() {
-                info!("DING!");
-                // get the desired direction of movement
+                // get the desired direction of movement. Depends on creature and infection
                 let is_infected = match infection {Some(_) => true, _ => false};
                 let new_direction: Direction = if is_infected {
                     decide_infected_creature_movement(creature, player_direction)
@@ -210,14 +159,13 @@ fn on_world_start_moving(
                     decide_creature_movement(creature, player_direction) //, routine)
                 };
                 
-
                 // TODO: next step handler for creatures here, some creatures might move differently. fex jumping two squares
                 let desired_coordinate = Coordinate(coordinate.0+Vec3::from(new_direction.clone()).as_ivec3());
-                //let below_desired_coordinate = Coordinate(coordinate.0+Vec3::from(new_direction.clone()).as_ivec3()+IVec3::Y);
 
+                /* if the creature is able to move from here, add the Moving component
+                * Any creature that just started moving will also get the stepping component, and actually start moving.
+                * Adding Stepping could've been done in a separate system, avoiding som code duplication, but done here for clarity */
                 if creature_can_move(creature, desired_coordinate, &obstacle_query, &walkable_query, &world_grid) {
-                    info!("OK: I {} was able to move!", entity);
-                    // start moving! (actual movement done elsewhere)
                     commands.entity(entity).insert(
                         Moving{
                             direction: new_direction.clone(), 
@@ -231,53 +179,22 @@ fn on_world_start_moving(
                     );
                 }
             }
-            let w = world_state.into_inner();
-            *w = WorldMovementState::Moving;
+
+            // The components have been set, and creatures are free to move in their desired directions.
+            *world_state = WorldMovementState::Moving;
         }
     }
 }
 
-//move according to player
-fn decide_infected_creature_movement(creature: &MovingCreature, player_direction: &Direction) -> Direction {
-    match creature {
-        MovingCreature::Player => player_direction.clone(),
-        MovingCreature::Ant => player_direction.clone(),
-        MovingCreature::Spider => player_direction.clone().opposite(),
-        MovingCreature::Rolypoly => player_direction.clone(),
-        //Creature::Snake => player_direction,
-        //Creature::Wasp => player_direction,
-        //Creature::Tick => player_direction,
-    }
-}
+/***********
+ * SYSTEMS *
+ **********/
 
-//move according to routine
-fn decide_creature_movement(creature: &MovingCreature, player_direction: &Direction) -> Direction { // , routine: &Routine) -> Direction {
-    match creature {
-        MovingCreature::Player => player_direction.clone(),
-        MovingCreature::Ant => player_direction.clone(),
-        MovingCreature::Spider => player_direction.clone().opposite(),
-        MovingCreature::Rolypoly => player_direction.clone(),
-        //Creature::Snake => player_direction,
-        //Creature::Wasp => player_direction,
-        //Creature::Tick => player_direction,
-    }
-}
-
-fn handle_movement_type(creature: &MovingCreature) -> MovementType {
-    match creature {
-        MovingCreature::Player => MovementType::OneStep,
-        MovingCreature::Ant => MovementType::OneStep,
-        MovingCreature::Spider => MovementType::OneStep,
-        MovingCreature::Rolypoly => MovementType::UntilCollision,
-    }
-}
-    //creature, player_direction, is_infected);
 /**  
  * Fly my babies!
  *
- * Let creatures move, the direction depending on the creatures behaviour
- * 
- * Note how the direction is not specified here. That is decided at the movement START (on_world_start_moving)
+ * Let creatures move, the direction depending on the creatures behaviour. Snaps creature to grid and removes Stepping component when snapped
+ * Note that, while the creature will stop stepping when it hits its desired grid point, it might not stop moving, depending on the "movement_type".
  * 
  * find the closest grid point, measure diff to it before and after movement. If the signs in the two diffs differ in any way, 
  * we have crossed the grid point and can snap to it(and stop moving)
@@ -291,82 +208,67 @@ fn moving_creatures_system(
 
 ) {
     if let WorldMovementState::Moving = *world_state {
+        let grid_size = world_grid.1;
         for (entity, moving, stepping, mut transform, mut coordinate) in creature_query.iter_mut() {
-            info!("I am moving!");
-            let p_translation = transform.translation;
-            let grid_size = world_grid.1;
-            let old_coordinate = coordinate.clone();
-            let closest_grid_point = (p_translation/grid_size).round()*grid_size;
-            let diff_to_closest_grid_point_before_movement = p_translation-closest_grid_point;
+            //store some data for the previous position, getting diff to closest gridpoint
+            let previous_translation = transform.translation;
+            let previous_coordinate = coordinate.clone();
+            let closest_grid_point = (previous_translation/grid_size).round()*grid_size;
+            let diff_to_closest_grid_point_before_movement = previous_translation-closest_grid_point;
 
-            //move the creature one FRAME with movement
+            //move the creature ONE STEP with movement
             let Stepping{moving_from} = stepping;
             let Moving{direction, speed, movement_type: _} = moving;
-
-            //move
             transform.translation += Vec3::from(direction.clone())*speed*time.delta_secs();
-
-            //
             let diff_to_closest_grid_point_after_movement = transform.translation-closest_grid_point;
+
             //if we've just now passed through the closest grid point, one of the diffs have changed sign
             //dont count this when it happens close to the initial position the creature moved from
             if diff_to_closest_grid_point_before_movement.signum() != diff_to_closest_grid_point_after_movement.signum() &&
-                *moving_from != p_translation {
-                info!("Hit grid!");
-                //snap to grid, and stop moving
+                *moving_from != previous_translation { // TODO: this last check is unstable, and subject to rounding errors as we are comparing floats
+                //snap to grid, stop stepping and update coordinate to world_grid
                 transform.translation = closest_grid_point;
-                coordinate.0 = (p_translation/grid_size).round().as_ivec3();
-                //update the coordinate in the world grid
-                
-                //if *movement_type != MovementType::UntilCollision {
                 commands.entity(entity).remove::<Stepping>();
 
                 // UPDATE GRID POSITION, remove from old, add to new
+                coordinate.0 = (previous_translation/grid_size).round().as_ivec3();
                 world_grid.0
-                .entry(old_coordinate)      
+                .entry(previous_coordinate)      
                 .and_modify(|creatures| { creatures.remove(&entity);});
                 world_grid.0
                 .entry(coordinate.clone())
                 .and_modify(|creatures| {creatures.insert(entity);})
                 .or_insert(HashSet::default()).insert(entity);
-                
-                //
-                //let creatures_in_my_space = world_grid.0.get(&coordinate);
-
-
-                //} else {
-                    //TODO check stopping conditions
-                //}
-
-                transform.translation=p_translation; // TODO this might not be ideal... can we get a reference, or is it technically primitive?
             }
         }
     }
 }
 
-// let teh creatures move! 
-fn look_for_stepping_finished(
+/** 
+ * Look for when all creatures have stopped stepping from the moving state
+ * 
+ * This should be an observer
+*/
+fn look_for_stepping_finished_system(
     stepping_creatures_query: Query<&Stepping>,
     mut world_state: ResMut<WorldMovementState>,
 ) {
-    // if the world state was moving, anf the query is empty, the world state will be stopped
+    // if the world state was moving, and the stepping(!) query is empty, the world state will go into interaction
     let world_state = world_state.as_mut();
     if (*world_state == WorldMovementState::Moving) && stepping_creatures_query.is_empty() {
-        //let w = world_state.as_mut();
-        //w = WorldMovementState::Stopped.into();
-        //let mut w = world_state.into_inner();
-        info!("All stopped, set to interacting state");
         *world_state = WorldMovementState::Interaction;
     }
 }
 
 /**
- * THis should actually be an observer
+ * Let creatures interact
+ * 
+ * This should actually be an observer, too
  */
 fn interacting_creatures_system(
     mut commands: Commands,
-    mut creature_query: Query<(Entity, &mut Transform, &Coordinate, &Moving, &MovingCreature)>,
-    mut moving_creatures_query: Query<Entity, With<MovingCreature>>,
+    moving_creature_query: Query<(Entity, &Transform, &Coordinate, &Moving, &MovingCreature)>,
+    moving_creatures_query: Query<Entity, (With<MovingCreature>, With<Moving>)>,
     obstacle_query: Query<(Entity, &Obstacle)>,
     walkable_query: Query<(Entity, &Walkable)>,
     world_grid: Res<WorldGrid>,
@@ -374,94 +276,48 @@ fn interacting_creatures_system(
 
 ) {
     if let WorldMovementState::Interaction = *world_state {
-        info!("interaction state");
+        // Go through all creatures that have just stepped
         for (entity, 
-            mut transform, 
+            transform, 
             coordinate, 
             Moving{direction: direction, speed: _ , movement_type: movement_type},
             creature
-        ) in creature_query.iter_mut() {
-            // THE GIRLS ARE INTERACTING AAA
-            let creatures_in_my_space = world_grid.0.get(&coordinate);
-            let grid_position = coordinate;
-
-            // THE GIRLS MIGHT CONTIUE MOVING AAA
-
+        ) in moving_creature_query.iter() {
             //some movement types allows for continuing to move as long as its possible
-            if let MovementType::UntilCollision = movement_type {
-                let desired_coordinate = Coordinate(coordinate.0+Vec3::from(direction.clone()).as_ivec3());
-                if creature_can_move(creature, desired_coordinate, &obstacle_query, &walkable_query, &world_grid) {
-                    info!("OK: I {} was able to move!", entity);
-                    // start moving! (actual movement done elsewhere)
-                    commands.entity(entity).insert(
-                        Moving{
-                            direction: direction.clone(), 
-                            speed: 2.0, 
-                            movement_type: handle_movement_type(creature)
-                        }
-                    ).insert(
-                        Stepping{
-                            moving_from: transform.translation, 
-                        }
-                    );
-                } else {
-                    //the creature wants to move, but cannot, stop moving
+            match movement_type {
+                MovementType::UntilCollision => {
+                    let desired_coordinate = Coordinate(coordinate.0+Vec3::from(direction.clone()).as_ivec3());
+                    if creature_can_move(creature, desired_coordinate, &obstacle_query, &walkable_query, &world_grid) {
+                        // continue stepping! (actual movement done elsewhere)
+                        commands.entity(entity).insert(
+                            Stepping{
+                                moving_from: transform.translation, 
+                            }
+                        );
+                    } else {
+                        //the creature wants to move, but cannot, stop moving
+                        commands.entity(entity).remove::<Moving>();
+                    }
+                }
+                MovementType::OneStep => {
+                    commands.entity(entity).remove::<Moving>();
                 }
             }
         }
 
         //if after interaction, there are any moving creatures left, keep moving
-        //*world_state = WorldMovementState::Moving;
         //otherwise, stop and await player 
         if moving_creatures_query.is_empty() {
             *world_state = WorldMovementState::Stopped;
         } else {
             *world_state = WorldMovementState::Moving;
         }
-
-
-        
-    }
-
-
-
-}
-
-fn creature_can_move(
-    creature: &MovingCreature, // TODO might need this later
-    desired_coordinate: Coordinate,
-    obstacle_query: &Query<(Entity, &Obstacle)>,
-    walkable_query: &Query<(Entity, &Walkable)>,
-    world_grid: &Res<WorldGrid>,
-) -> bool {
-    let mut able_to_move = false;
-    //let desired_coordinate = Coordinate(coordinate.0+Vec3::from(new_direction.clone()).as_ivec3());
-    let below_desired_coordinate = Coordinate(desired_coordinate.0-IVec3::Y);
-
-    // There has to be walkable terrain bellow where I want to go
-    if let Some(entities) = world_grid.0.get(&below_desired_coordinate) {
-        //there is SOMETHING there, but is it walkable
-        if walkable_query.iter_many(entities).count()>0 {
-            able_to_move = true;
-            info!("there is walkable terrain here!");
-        }
-    }
-
-    // am I allowed to move in the given direction? (this assumes SINGLE step)                
-    if let Some(entities) = world_grid.0.get(&desired_coordinate) {
-        //there is SOMETHING there, but are there any obstacles?
-        if obstacle_query.iter_many(entities).count()>0 {
-            able_to_move = false;
-            info!("I was unable to move!");
-        }
-    }
-
-    able_to_move
+    }   
 }
 
 fn init_coordinates(
     mut commands: Commands,
-    mut creature_query: Query<(Entity, &mut Transform), (Added<Transform>, Without<Coordinate>)>, //Todo remove movingcreature, register all!
+    mut creature_query: Query<(Entity, &mut Transform), (Added<Transform>, Without<Coordinate>)>,
     mut world_grid: ResMut<WorldGrid>,
 ) {
     for (entity, transform) in creature_query.iter_mut() {
@@ -478,7 +334,6 @@ fn init_coordinates(
     }
 }
 
-
 pub struct CreaturePlugin;
 impl Plugin for CreaturePlugin {
     fn build(&self, app: &mut App) {
@@ -488,10 +343,15 @@ impl Plugin for CreaturePlugin {
         .register_type::<Infected>()
         .register_type::<Moving>()
         .register_type::<Obstacle>()
+        .register_type::<Walkable>()
         .init_resource::<WorldMovementState>()
         .init_resource::<WorldGrid>()
-        .add_systems(Update, init_coordinates)
-        .add_systems(Update, (moving_creatures_system, look_for_stepping_finished, interacting_creatures_system))
+        .add_systems(Update, (
+            init_coordinates, 
+            moving_creatures_system, 
+            look_for_stepping_finished_system, 
+            interacting_creatures_system)
+        )
         .add_observer(on_world_start_moving);
     }      
 }

@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 pub mod ant;
 pub mod creature;
+pub mod handlers;
 
 use ant::AntPlugin;
 use creature::CreaturePlugin;

@@ -291,6 +291,7 @@ fn moving_creatures_system(
 
 ) {
     if let WorldMovementState::Moving = *world_state {
+        info!("in moving state");
         for (entity, moving, stepping, mut transform, mut coordinate) in creature_query.iter_mut() {
             info!("I am moving!");
             let p_translation = transform.translation;
@@ -341,6 +342,7 @@ fn moving_creatures_system(
                 transform.translation=p_translation; // TODO this might not be ideal... can we get a reference, or is it technically primitive?
             }
         }
+        info!("moving state done");
     }
 }
 
@@ -366,7 +368,7 @@ fn look_for_stepping_finished(
 fn interacting_creatures_system(
     mut commands: Commands,
     mut creature_query: Query<(Entity, &mut Transform, &Coordinate, &Moving, &MovingCreature)>,
-    mut moving_creatures_query: Query<Entity, With<MovingCreature>>,
+    mut moving_creatures_query: Query<Entity, (With<MovingCreature>, With<Moving>)>,
     obstacle_query: Query<(Entity, &Obstacle)>,
     walkable_query: Query<(Entity, &Walkable)>,
     world_grid: Res<WorldGrid>,
@@ -381,6 +383,7 @@ fn interacting_creatures_system(
             Moving{direction: direction, speed: _ , movement_type: movement_type},
             creature
         ) in creature_query.iter_mut() {
+            info!("moving creature");
             // THE GIRLS ARE INTERACTING AAA
             let creatures_in_my_space = world_grid.0.get(&coordinate);
             let grid_position = coordinate;
@@ -388,24 +391,33 @@ fn interacting_creatures_system(
             // THE GIRLS MIGHT CONTIUE MOVING AAA
 
             //some movement types allows for continuing to move as long as its possible
-            if let MovementType::UntilCollision = movement_type {
-                let desired_coordinate = Coordinate(coordinate.0+Vec3::from(direction.clone()).as_ivec3());
-                if creature_can_move(creature, desired_coordinate, &obstacle_query, &walkable_query, &world_grid) {
-                    info!("OK: I {} was able to move!", entity);
-                    // start moving! (actual movement done elsewhere)
-                    commands.entity(entity).insert(
-                        Moving{
-                            direction: direction.clone(), 
-                            speed: 2.0, 
-                            movement_type: handle_movement_type(creature)
-                        }
-                    ).insert(
-                        Stepping{
-                            moving_from: transform.translation, 
-                        }
-                    );
-                } else {
-                    //the creature wants to move, but cannot, stop moving
+            match movement_type {
+                MovementType::UntilCollision => {
+                    info!("untilcollision");
+                    let desired_coordinate = Coordinate(coordinate.0+Vec3::from(direction.clone()).as_ivec3());
+                    if creature_can_move(creature, desired_coordinate, &obstacle_query, &walkable_query, &world_grid) {
+                        info!("OK: I {} was able to move!", entity);
+                        // start moving! (actual movement done elsewhere)
+                        commands.entity(entity) /* .insert(
+                            Moving{
+                                direction: direction.clone(), 
+                                speed: 2.0, 
+                                movement_type: handle_movement_type(creature)
+                            }
+                        )*/
+                        .insert(
+                            Stepping{
+                                moving_from: transform.translation, 
+                            }
+                        );
+                    } else {
+                        //the creature wants to move, but cannot, stop moving
+                        commands.entity(entity).remove::<Moving>();
+                    }
+                }
+                MovementType::OneStep => {
+                    info!("onestep");
+                    commands.entity(entity).remove::<Moving>();
                 }
             }
         }
@@ -415,16 +427,16 @@ fn interacting_creatures_system(
         //otherwise, stop and await player 
         if moving_creatures_query.is_empty() {
             *world_state = WorldMovementState::Stopped;
+            info!("going to Stopped state");
         } else {
+            info!("going to Moving state");
             *world_state = WorldMovementState::Moving;
         }
 
 
-        
+        info!("interaction state done");
     }
-
-
-
+    
 }
 
 fn creature_can_move(
@@ -488,6 +500,7 @@ impl Plugin for CreaturePlugin {
         .register_type::<Infected>()
         .register_type::<Moving>()
         .register_type::<Obstacle>()
+        .register_type::<Walkable>()
         .init_resource::<WorldMovementState>()
         .init_resource::<WorldGrid>()
         .add_systems(Update, init_coordinates)

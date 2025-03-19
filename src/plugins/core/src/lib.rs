@@ -2,7 +2,7 @@ use avian3d::PhysicsPlugins;
 use blenvy::BlenvyPlugin;
 
 pub mod camera;
-pub mod enemies;
+pub mod creatures;
 pub mod exit_game;
 pub mod game_world;
 pub mod input;
@@ -20,7 +20,7 @@ impl bevy::prelude::Plugin for CorePlugin {
             input::input_manager::InputManagerPlugin,
             camera::isometric_camera::IsometricCameraPlugin,
             player::PlayerPlugin,
-            enemies::EnemiesPlugin,
+            creatures::CreaturePlugin,
             settings::plugins::VendorPlugin,
             PhysicsPlugins::default(), // avian3d
         ));

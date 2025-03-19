@@ -280,7 +280,7 @@ fn interacting_creatures_system(
         for (entity, 
             transform, 
             coordinate, 
-            Moving{direction: direction, speed: _ , movement_type: movement_type},
+            Moving{direction, speed: _, movement_type},
             creature
         ) in moving_creature_query.iter() {
             //some movement types allows for continuing to move as long as its possible
@@ -334,8 +334,8 @@ fn init_coordinates(
     }
 }
 
-pub struct CreaturePlugin;
-impl Plugin for CreaturePlugin {
+pub struct CreatureMovementPlugin;
+impl Plugin for CreatureMovementPlugin {
     fn build(&self, app: &mut App) {
         app
         .register_type::<MovingCreature>()

@@ -5,13 +5,13 @@ pub mod creature;
 pub mod handlers;
 
 use ant::AntPlugin;
-use creature::CreaturePlugin;
+use creature::CreatureMovementPlugin;
 
-pub struct EnemiesPlugin;
-impl Plugin for EnemiesPlugin {
+pub struct CreaturePlugin;
+impl Plugin for CreaturePlugin {
     fn build(&self, app: &mut bevy::app::App) {
         app
         .add_plugins(AntPlugin)
-        .add_plugins(CreaturePlugin);
+        .add_plugins(CreatureMovementPlugin);
     }
 }

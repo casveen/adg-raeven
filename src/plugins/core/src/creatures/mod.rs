@@ -1,11 +1,9 @@
 use bevy::prelude::*;
 
 pub mod ant;
-pub mod creature;
-pub mod handlers;
-
+pub mod movement;
 use ant::AntPlugin;
-use creature::CreatureMovementPlugin;
+use movement::creature_movement::CreatureMovementPlugin;
 
 pub struct CreaturePlugin;
 impl Plugin for CreaturePlugin {

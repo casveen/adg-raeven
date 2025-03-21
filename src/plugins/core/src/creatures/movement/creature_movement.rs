@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 use bevy::prelude::*;
 use bevy::utils::HashSet;
+use crate::game_world::creature::Infected;
+use crate::game_world::environment::{Obstacle, Walkable};
+use crate::game_world::grid::{Coordinate, WorldGrid};
 use crate::player::controller::{PlayerEvent, PlayerMovementEvent};
 use crate::utils::grid::Direction;
 use crate::player::states::cordycept::CordyCeptedComponent;
@@ -17,27 +20,13 @@ use super::handlers::{
  * Events:
  * OnPlayerMove -> should trigger when player starts moving
  * 
- * 
- * 
- * commands.trigger(OnPlayerMove { direction: Direction });
- * for every creature, set an observer
- * .observe(OnPlayerMover);
- * and creatureCollision
- * 
  * Components:
  * - Moving: for entities that are moving. Moving depends on creature, some move one step, others move until collision etc.
  *           not to be confused with step. The Moving component decides how/how long the creature will step.
  * - Stepping: for entities that are stepping. The step component is what ACTUALLY moves the creature, and is removed as soon as the creature snaps to the next grid 
  * 
- * 
- * 
- * 
- * 
  * TODO_
  * replace wall with obstacle
- * 
- * 
- * 
  */
 
 
@@ -45,15 +34,8 @@ use super::handlers::{
 /*************
  * RESOURCES *
  *************
- *
- * - WorldGrid: resource representing the game world. A grid where entities place themselves, and the size of the grid in 3d space 
  * - WorldMovementState: the current movement state of the world.
  */
-#[derive(Resource)]
-pub struct WorldGrid (
-    pub HashMap<Coordinate, HashSet<Entity>>,
-    pub f32
-);
 
 #[derive(Resource, PartialEq)]
 enum WorldMovementState {
@@ -61,12 +43,6 @@ enum WorldMovementState {
     Moving,
     Interaction,
     // Free? free movement when not in puzzle mode
-}
-
-impl Default for WorldGrid {
-    fn default() -> Self {
-        WorldGrid(default(), 1.0)
-    }
 }
 
 impl Default for WorldMovementState {
@@ -113,22 +89,6 @@ struct Stepping {
     //movement_type: MovementType
 }
 
-//used for collision checking
-#[derive(Component, Reflect, Debug, Eq, Hash, PartialEq, Clone)]
-#[reflect(Component)]
-pub struct Coordinate(pub IVec3);
-
-#[derive(Component, Reflect, Debug)]
-#[reflect(Component)]
-struct Infected;
-
-#[derive(Component, Reflect, Debug)]
-#[reflect(Component)]
-pub struct Obstacle;
-
-#[derive(Component, Reflect, Debug)]
-#[reflect(Component)]
-pub struct Walkable;
 
 /************
  * TRIGGERS *
@@ -315,25 +275,6 @@ fn interacting_creatures_system(
     }   
 }
 
-fn init_coordinates(
-    mut commands: Commands,
-    mut creature_query: Query<(Entity, &mut Transform), (Added<Transform>, Without<Coordinate>)>,
-    mut world_grid: ResMut<WorldGrid>,
-) {
-    for (entity, transform) in creature_query.iter_mut() {
-        let grid_size =  world_grid.1;
-        let coordinate = Coordinate(
-            (transform.translation/grid_size).round().as_ivec3()
-        );
-        commands.entity(entity).insert(coordinate.clone());
-
-        world_grid.0
-        .entry(coordinate)
-        .and_modify(|creatures| {creatures.insert(entity);})
-        .or_insert(HashSet::default()).insert(entity);
-    }
-}
-
 pub struct CreatureMovementPlugin;
 impl Plugin for CreatureMovementPlugin {
     fn build(&self, app: &mut App) {
@@ -347,7 +288,6 @@ impl Plugin for CreatureMovementPlugin {
         .init_resource::<WorldMovementState>()
         .init_resource::<WorldGrid>()
         .add_systems(Update, (
-            init_coordinates, 
             moving_creatures_system, 
             look_for_stepping_finished_system, 
             interacting_creatures_system)

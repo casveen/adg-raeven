@@ -9,8 +9,8 @@
 
 use bevy::{ecs::{entity::Entity, system::{Query, Res}}, math::IVec3};
 
-use crate::utils::grid::Direction;
-use super::creature::{Coordinate, MovementType, MovingCreature, Obstacle, Walkable, WorldGrid};
+use crate::{game_world::{environment::{Obstacle, Walkable}, grid::{Coordinate, WorldGrid}}, utils::grid::Direction};
+use super::creature_movement::{MovementType, MovingCreature};
 
 //move according to routine
 pub fn decide_creature_movement(creature: &MovingCreature, player_direction: &Direction) -> Direction { // , routine: &Routine) -> Direction {

@@ -14,7 +14,7 @@ pub struct WorldGrid (
 
 impl Default for WorldGrid {
     fn default() -> Self {
-        WorldGrid(default(), 3.0)
+        WorldGrid(default(), 1.0)
     }
 }
 

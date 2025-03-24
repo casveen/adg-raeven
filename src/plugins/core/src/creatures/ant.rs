@@ -150,7 +150,7 @@ fn spawn_ant(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let t = event.event().transform.with_scale(Vec3::ONE * 1.6);
+    let t = event.event().transform.with_scale(Vec3::ONE * 0.5);
     let new_ant = commands
         .spawn((
             Ant,

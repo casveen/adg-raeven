@@ -51,8 +51,8 @@ fn idle_run(event: &PlayerMovementEvent, transform: &mut Transform, time: &Time)
         return;
     };
     let motion_vector: bevy::prelude::Vec3 = Vec3::from(motion);
-    let movement = motion_vector * RUN_SPEED * time.delta_secs();
-    transform.translation += movement;
+    //let movement = motion_vector * RUN_SPEED * time.delta_secs();
+    //transform.translation += movement;
 
     movement::rotate_player(motion_vector, transform, ROTATION_SPEED, time);
 }

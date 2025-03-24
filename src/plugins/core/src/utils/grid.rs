@@ -1,5 +1,5 @@
 use avian3d::math::PI;
-use bevy::{log::info, math::{Vec2, Vec3, Vec3Swizzles}, reflect::Reflect};
+use bevy::{log::info, math::{IVec3, Vec2, Vec3, Vec3Swizzles}, reflect::Reflect};
 
 /***********
  * HELPERS *
@@ -47,6 +47,12 @@ impl From<bevy::prelude::Vec2> for Direction {
 impl From<bevy::prelude::Vec3> for Direction {
     fn from(vector: Vec3) -> Direction {
         Direction::from(vector.xz())
+    }
+}
+
+impl From<bevy::prelude::IVec3> for Direction {
+    fn from(vector: IVec3) -> Direction {
+        Direction::from(vector.as_vec3().xz())
     }
 }
 

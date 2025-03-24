@@ -8,8 +8,10 @@ use crate::{
         Wall,
     },
     player::states::cordycept::{CordyCeptMovement, CordyCeptedComponent},
-    utils::gameplayscene_loadstatus::GameplaySceneLoadedEvent,
+    utils::{gameplayscene_loadstatus::GameplaySceneLoadedEvent, grid::Direction},
 };
+
+use super::movement::creature_movement::MovingCreature;
 
 pub struct AntPlugin;
 impl Plugin for AntPlugin {
@@ -165,6 +167,7 @@ fn spawn_ant(
             //
             Mesh3d(meshes.add(Cuboid::from_size(t.scale))),
             MeshMaterial3d(materials.add(Color::srgb_u8(190, 0, 180))),
+            MovingCreature::Ant,
         ))
         .id();
     commands.entity(event.entity()).add_child(new_ant);
@@ -443,9 +446,9 @@ pub struct AntRutinePoint;
 ///
 /// Ants rutine component
 #[derive(Component)]
-struct AntRutineComponent {
-    collection: Entity,
-    current_point: Entity,
+pub struct AntRutineComponent {
+    pub collection: Entity,
+    pub current_point: Entity,
     action: AntRutineAction,
 }
 enum AntRutineAction {
@@ -453,12 +456,17 @@ enum AntRutineAction {
     Wait(Entity /* timer entity */),
 }
 impl AntRutineComponent {
-    fn interpolate(&self, transform: &mut Transform, target_position: &Vec3, delta: f32) {
+    /*fn interpolate(&self, transform: &mut Transform, target_position: &Vec3, delta: f32) {
         const ANT_MOVESPEED: f32 = 2.;
 
         // TODO, actual pathfinding. Smoothbrain linear interpolation for now
         let dir = (target_position - transform.translation).normalize();
         transform.translation += dir * ANT_MOVESPEED * delta;
+    }*/
+    pub fn next_routine_direction(&self, transform: &mut Transform, target_position: &Vec3) -> Direction {
+        //get direction between current position and target
+        //go towards it in a "straight" line
+        return Direction::North;
     }
 
     fn reached_point(&self, position: &Vec3, target_positon: &Vec3) -> bool {
@@ -466,7 +474,7 @@ impl AntRutineComponent {
         (target_positon - position).length() < POSITION_MARGIN
     }
 
-    fn set_next_point(&mut self, collection: &AntRutineCollection) {
+    pub fn set_next_point(&mut self, collection: &AntRutineCollection) {
         let new_point = collection.get_next_point(self.current_point);
         self.current_point = new_point;
         self.action = AntRutineAction::Move(new_point);
@@ -489,11 +497,17 @@ fn ant_rutine(
         match ant_rutine.action {
             AntRutineAction::Move(e_point) => {
                 let (_, point_transform) = q_rutine_points.get(e_point).unwrap();
+                
+                /*  dont actually perform the routine, let the movement system do that and et direction from routine
                 ant_rutine.interpolate(
                     &mut transform,
                     &point_transform.translation,
                     time.delta_secs(),
-                );
+                ); */
+
+                /*
+                move to ant interaction, 
+                */ 
                 if ant_rutine.reached_point(&transform.translation, &point_transform.translation) {
                     info!("Ant reached rutine position");
                     let timer = commands

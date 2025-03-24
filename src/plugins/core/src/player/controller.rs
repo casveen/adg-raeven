@@ -1,10 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    camera::isometric_camera::CameraYaw,
-    input::input_manager::{self, button, motion, InputManager},
-    utils::gameplayscene_loadstatus::GameplaySceneLoadedEvent,
-    utils::grid::Direction
+    camera::isometric_camera::CameraYaw, creatures::movement::creature_movement::MovingCreature, input::input_manager::{self, button, motion, InputManager}, utils::{gameplayscene_loadstatus::GameplaySceneLoadedEvent, grid::Direction}
 };
 
 use super::states;
@@ -232,6 +229,7 @@ fn spawn_player(
                 state: PlayerState::Alive,
             },
             player_spawn.transform,
+            MovingCreature::Player,
         ))
         // .insert_children(0, &[fsm_entity]);
         .with_children(|player| {

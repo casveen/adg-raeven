@@ -8,8 +8,8 @@ pub struct VisualsPlugin;
 impl Plugin for VisualsPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(spawn_player_mesh)
-            .add_observer(setup_once_loaded);
-            //.add_observer(observe_player_event);
+            .add_observer(setup_once_loaded)
+            .add_observer(observe_player_event);
     }
 }
 

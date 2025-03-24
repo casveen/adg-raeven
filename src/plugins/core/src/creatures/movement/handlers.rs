@@ -9,22 +9,39 @@
 
 use bevy::{ecs::{entity::Entity, system::{Query, Res}}, math::IVec3};
 
-use crate::{game_world::{environment::{Obstacle, Walkable}, grid::{Coordinate, WorldGrid}}, utils::grid::Direction};
+use crate::{creatures::ant::{AntRutineCollection, AntRutineComponent, AntRutinePoint}, game_world::{environment::{Obstacle, Walkable}, grid::{Coordinate, WorldGrid}}, utils::grid::Direction};
 use super::creature_movement::{MovementType, MovingCreature};
 
-//move according to routine
-pub fn decide_creature_movement(creature: &MovingCreature, player_direction: &Direction) -> Direction { // , routine: &Routine) -> Direction {
-    match creature {
-        MovingCreature::Player => player_direction.clone(),
-        MovingCreature::Ant => player_direction.clone(),
-        MovingCreature::Spider => player_direction.clone().opposite(),
-        MovingCreature::Rolypoly => player_direction.clone(),
-        //Creature::Snake => player_direction,
-        //Creature::Wasp => player_direction,
-        //Creature::Tick => player_direction,
+pub fn decide_creature_routine_movement(
+    creature: &Entity, 
+    creature_coordinate: &Coordinate,
+    creature_routine:   &mut Query<&mut AntRutineComponent>,
+    routine_collection: &Query<(Entity, &mut AntRutineCollection)>,
+    routine_points:     &Query<(&AntRutinePoint, &Coordinate)>,
+) -> Option<Direction> { 
+    // get the desired coordinate
+    let Ok(mut routine)    = creature_routine.get_mut(*creature) else {return None;};
+    let Ok((collection_entity, collection)) = routine_collection.get(routine.collection) else {return None;};
+    let Ok((routine_point, desired_coordinate)) = routine_points.get(routine.current_point) else {return None;};
+    
+    // are we ON the desired coordinate? TODO: move this code to interaction step. Too much happening here.
+    if *desired_coordinate == *creature_coordinate {
+        // set desired coordinate to next one
+        routine.set_next_point(collection);
+        
+        // desired_coordinate = routine.current_point;
+        let Ok((routine_point, desired_coordinate)) = routine_points.get(routine.current_point) else {return None;};
+        //M mkovr towards desired
+        let diff = desired_coordinate.0-creature_coordinate.0;
+        Some(Direction::from(diff))
+    } else {
+        //we are not on the desired coordinate, but lets move there
+        // find direction to dsired coordinate
+        let diff = desired_coordinate.0-creature_coordinate.0;
+        Some(Direction::from(diff))
     }
 }
-
+ 
 pub fn handle_movement_type(creature: &MovingCreature) -> MovementType {
     match creature {
         MovingCreature::Player => MovementType::OneStep,
@@ -81,6 +98,7 @@ pub fn creature_can_move(
     walkable_query: &Query<(Entity, &Walkable)>,
     world_grid: &Res<WorldGrid>,
 ) -> bool {
+    return true;
     let mut able_to_move = false;
     let below_desired_coordinate = Coordinate(desired_coordinate.0-IVec3::Y);
 

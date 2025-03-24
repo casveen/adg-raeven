@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use bevy::prelude::*;
 use bevy::utils::HashSet;
+use crate::creatures::ant::{AntRutineCollection, AntRutineComponent, AntRutinePoint};
 use crate::game_world::creature::Infected;
 use crate::game_world::environment::{Obstacle, Walkable};
 use crate::game_world::grid::{Coordinate, WorldGrid};
@@ -8,13 +9,10 @@ use crate::player::controller::{PlayerEvent, PlayerMovementEvent};
 use crate::utils::grid::Direction;
 use crate::player::states::cordycept::CordyCeptedComponent;
 use super::handlers::{
-    decide_creature_movement, 
-    handle_movement_type, 
-    decide_infected_creature_movement,
-    creature_can_move
+    creature_can_move, decide_creature_routine_movement, decide_infected_creature_movement, handle_movement_type
 };
 
-/***
+/*** 
  * Resources:
  * 
  * Events:
@@ -27,6 +25,20 @@ use super::handlers::{
  * 
  * TODO_
  * replace wall with obstacle
+ * 
+ *          STOPPED   ->  MOVING   ->   INTERACTING  --+-> MOVING
+ *                                                     \-> STOPPED
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
  */
 
 
@@ -97,11 +109,22 @@ struct Stepping {
 /**
  * A trigger that triggers when the player makes a  first move from a stopped state. 
  * This is when the game world will start to move, and will not stop before every creature has finished its movement(some movements consists of several steps).
+ * 
+ * All directions have to be determined at this point, be it player movement, or routine movement.
  */
 fn on_world_start_moving(
     player_event: Trigger<PlayerEvent>,
     mut commands: Commands,
-    mut creature_query: Query<(Entity, &MovingCreature, &Transform, &Coordinate, Option<&CordyCeptedComponent>)>,
+    mut creature_query: Query<(
+        Entity, 
+        &MovingCreature, 
+        &Transform, 
+        &Coordinate, 
+        Option<&CordyCeptedComponent>
+    )>, //, Option<&AntRoutineComponent>)>,
+    mut creature_routine: Query<&mut AntRutineComponent>,
+    mut routine_collection: Query<(Entity, &mut AntRutineCollection)>,
+    mut routine_points:     Query<(&AntRutinePoint, &Coordinate)>,
     obstacle_query: Query<(Entity, &Obstacle)>,
     walkable_query: Query<(Entity, &Walkable)>,
     world_grid: Res<WorldGrid>,
@@ -109,15 +132,34 @@ fn on_world_start_moving(
 )   {
     if let WorldMovementState::Stopped = *world_state {
         if let PlayerEvent::Movement(PlayerMovementEvent{motion: Some(player_direction)}) = player_event.event() {
+            info!("player move");
             //the player has given input, lets move ALL creatures
             for (entity, creature, transform, coordinate, infection) in creature_query.iter_mut() {
+                
                 // get the desired direction of movement. Depends on creature and infection
                 let is_infected = match infection {Some(_) => true, _ => false};
-                let new_direction: Direction = if is_infected {
-                    decide_infected_creature_movement(creature, player_direction)
-                } else {
-                    decide_creature_movement(creature, player_direction) //, routine)
+                let has_routine = match creature_routine.get(entity) {Ok(_) => true, _ => false};
+                let new_direction: Option<Direction> = match creature {
+                    MovingCreature::Player => { 
+                        info!("P");
+                        Some(player_direction.clone())
+                    }
+                    _ => { 
+                        info!("R");
+                        if is_infected {
+                            Some(decide_infected_creature_movement(creature, player_direction))
+                        } else {
+                            //decide_creature_movement(creature, player_direction, creature_routine) //, routine)
+                            decide_creature_routine_movement(&entity, coordinate, &mut creature_routine, &routine_collection, &routine_points)
+                        }
+                    }
                 };
+
+                info!("A");
+
+                // if we didnt get a new direction, dont move. TODO: might have weird edgecases?
+                let Some(new_direction) = new_direction else {continue; };
+                info!("B");
                 
                 // TODO: next step handler for creatures here, some creatures might move differently. fex jumping two squares
                 let desired_coordinate = Coordinate(coordinate.0+Vec3::from(new_direction.clone()).as_ivec3());
@@ -125,7 +167,9 @@ fn on_world_start_moving(
                 /* if the creature is able to move from here, add the Moving component
                 * Any creature that just started moving will also get the stepping component, and actually start moving.
                 * Adding Stepping could've been done in a separate system, avoiding som code duplication, but done here for clarity */
+                info!("C");
                 if creature_can_move(creature, desired_coordinate, &obstacle_query, &walkable_query, &world_grid) {
+                    info!("D");
                     commands.entity(entity).insert(
                         Moving{
                             direction: new_direction.clone(), 

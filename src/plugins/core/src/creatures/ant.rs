@@ -1,5 +1,6 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
+use blenvy::{BlueprintInfo, HideUntilReady, SpawnBlueprint};
 
 use crate::{
     game_world::{
@@ -153,21 +154,24 @@ fn spawn_ant(
     let t = event.event().transform.with_scale(Vec3::ONE * 0.5);
     let new_ant = commands
         .spawn((
-            Ant,
+            BlueprintInfo::from_path("blueprints/ant.glb"), // all we need is a Blueprint info...
+            SpawnBlueprint, // and spawnblueprint to tell blenvy to spawn the blueprint now
+            HideUntilReady, // only reveal the level once it is ready
+            //Ant,
             // transform is inherited from parent
             Transform::default(),
             Collider::cuboid(t.scale.x, t.scale.y, t.scale.z),
             CollidingEntities::default(),
-            PuffyShroomCollision, // todo, should be removed for cordycepted ant?
+            //PuffyShroomCollision, // todo, should be removed for cordycepted ant?
             AntRutineComponent {
                 collection: event.collection,
                 current_point: event.first_rutine_point,
                 action: AntRutineAction::Move(event.first_rutine_point),
             },
             //
-            Mesh3d(meshes.add(Cuboid::from_size(t.scale))),
-            MeshMaterial3d(materials.add(Color::srgb_u8(190, 0, 180))),
-            MovingCreature::Ant,
+            //Mesh3d(meshes.add(Cuboid::from_size(t.scale))),
+            //MeshMaterial3d(materials.add(Color::srgb_u8(190, 0, 180))),
+            //MovingCreature::Ant,
         ))
         .id();
     commands.entity(event.entity()).add_child(new_ant);

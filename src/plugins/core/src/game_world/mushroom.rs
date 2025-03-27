@@ -5,6 +5,7 @@ use blenvy::*;
 
 /**
  * Components and systems for attaching a mushroom to a entity, which can grow/shrink on some command
+ * These are NOT cordyceps, or puffy, mushrooms. But intended as environment mechanics
  * 
  * components:
  *     Bloomable: this entity can spawn a mushroom(as specified by MushroomToBloom).
@@ -68,15 +69,6 @@ fn add_mushrooms_to_bloomables(
         commands.entity(entity).add_child(mushroom);
     }
 }
-
-/**
- * since the mshrooms are spawned as blueprints, we dont have ready access to its children. 
- * We need the child(ren) with the MeshMorphWeight component, so we wait for it to be added
-fn add_blooms_component_to_spawned_mushrooms(
-    parent_query: Query<(Entity, &Children), With<Bloomable>>, // get all bloomables  
-    mut query: Query<(Entity), Added<MeshMorphWeights>>,
-)
-*/
 
 fn update_mushroom_size(
     mut query_mushroom: Query<(&mut Blooms, &mut MeshMorphWeights)>,

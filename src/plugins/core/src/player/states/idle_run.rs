@@ -47,12 +47,12 @@ pub fn process_event(
 }
 
 fn idle_run(event: &PlayerMovementEvent, transform: &mut Transform, time: &Time) {
-    let Some(motion) = event.motion else {
+    let Some(motion) = &event.motion else {
         return;
     };
+    let motion_vector: bevy::prelude::Vec3 = Vec3::from(motion);
+    //let movement = motion_vector * RUN_SPEED * time.delta_secs();
+    //transform.translation += movement;
 
-    let movement = motion * RUN_SPEED * time.delta_secs();
-    transform.translation += movement;
-
-    movement::rotate_player(motion, transform, ROTATION_SPEED, time);
+    movement::rotate_player(motion_vector, transform, ROTATION_SPEED, time);
 }

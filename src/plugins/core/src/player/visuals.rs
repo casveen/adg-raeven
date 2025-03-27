@@ -75,7 +75,7 @@ fn setup_once_loaded(
     let player = player.single();
 
     println!("AnimationPlayer loaded...");
-    let (entity, mut anim_player) = anim_players.single_mut();
+    let Ok((entity, mut anim_player)) = anim_players.get_mut(player) else {return; };
     println!("player {:?}", player);
     println!("entt {:?}", entity);
     let mut transitions = AnimationTransitions::new();
@@ -97,6 +97,7 @@ fn observe_player_event(
     event: Trigger<PlayerEvent>,
     _: Query<&Parent, With<Player>>,
     mut fsm: Query<&mut AnimationComponent, With<Player>>,
+    player: Query<Entity, With<Player>>,
     mut animation_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
     animations: Res<Animations>,
 ) {
@@ -106,7 +107,10 @@ fn observe_player_event(
     }
     let mut fsm = fsm.single_mut();
 
-    let (mut player, mut transitions) = animation_players.single_mut();
+    let player_entity = player.single();
+
+    //let (mut player, mut transitions) = animation_players.single_mut();
+    let Ok((mut player, mut transitions)) = animation_players.get_mut(player_entity) else {return; };
     fsm.fsm.process_event(
         &event.event(),
         &mut fsm::AnimUpdateAggregate(&animations, &mut player, &mut transitions),
@@ -240,15 +244,15 @@ mod fsm {
         ) {
             let AnimUpdateAggregate(animations, anim_player, anim_transitions) = &mut *anim_update;
 
-            match movement_event.motion {
-                Some(delta) => {
+            match &movement_event.motion {
+                Some(_) => {
                     if !anim_player.is_playing_animation(animations.animations[ANIM_RUN]) {
                         anim_transitions
                             .play(anim_player, animations.animations[ANIM_RUN], Duration::ZERO)
                             .repeat();
                     }
                     for (_, anim) in anim_player.playing_animations_mut() {
-                        anim.set_speed(delta.length() * ANIMSPEED_RUN);
+                        anim.set_speed(ANIMSPEED_RUN); // TODO removed vector direction, but length might've been used for anim speed
                     }
                 }
                 None => {

@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    camera::isometric_camera::CameraYaw,
-    input::input_manager::{self, button, motion, InputManager},
-    utils::gameplayscene_loadstatus::GameplaySceneLoadedEvent,
+    camera::isometric_camera::CameraYaw, creatures::movement::creature_movement::MovingCreature, input::input_manager::{self, button, motion, InputManager}, utils::{gameplayscene_loadstatus::GameplaySceneLoadedEvent, grid::Direction}
 };
 
 use super::states;
@@ -53,7 +51,7 @@ pub struct PlayerFsm;
 
 #[derive(Event)]
 pub struct PlayerMovementEvent {
-    pub motion: Option<Vec3>,
+    pub motion: Option<Direction>,
 }
 impl PlayerMovementEvent {
     pub fn empty() -> Self {
@@ -231,6 +229,7 @@ fn spawn_player(
                 state: PlayerState::Alive,
             },
             player_spawn.transform,
+            MovingCreature::Player,
         ))
         // .insert_children(0, &[fsm_entity]);
         .with_children(|player| {
@@ -267,7 +266,7 @@ fn process_input(
         }));
     }
 
-    let Some(direction) = im.get_motion(MOVEMENT).get_motion_opt_y(yaw.get()) else {
+    let Some(direction_vector) = im.get_motion(MOVEMENT).get_motion_opt_y(yaw.get()) else {
         if *moved_last_frame {
             commands.trigger(PlayerEvent::Movement(PlayerMovementEvent { motion: None }));
         }
@@ -275,8 +274,8 @@ fn process_input(
         return;
     };
     *moved_last_frame = true;
-
+    info!("direction vector {:?}", direction_vector);
     commands.trigger(PlayerEvent::Movement(PlayerMovementEvent {
-        motion: Some(direction),
+        motion: Some(Direction::from(direction_vector)),
     }));
 }

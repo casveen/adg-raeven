@@ -7,13 +7,14 @@ use super::controller::{Player, PlayerEvent};
 pub struct VisualsPlugin;
 impl Plugin for VisualsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(spawn_player_mesh)
+        app.init_resource::<Animations>()
+            .add_observer(spawn_player_mesh)
             .add_observer(setup_once_loaded)
             .add_observer(observe_player_event);
     }
 }
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct Animations {
     pub animations: Vec<AnimationNodeIndex>,
     graph: Handle<AnimationGraph>,
@@ -27,6 +28,10 @@ pub struct AnimationComponent {
 #[derive(Component)]
 pub struct Boxy;
 const BOXY_PATH: &str = "models/boxy.glb";
+
+fn init_animations() {
+
+}
 
 fn spawn_player_mesh(
     _: Trigger<OnAdd, Player>,
@@ -67,10 +72,10 @@ fn setup_once_loaded(
     player: Query<Entity, With<Player>>,
     mut commands: Commands,
     animations: Res<Animations>,
-    mut anim_players: Query<(Entity, &mut AnimationPlayer), With<AnimationPlayer>>,
+    mut anim_players: Query<(Entity, &mut AnimationPlayer), Added<AnimationPlayer>>,
 ) {
     if player.is_empty() {
-        unreachable!("Player does not exist when inserting animation player")
+        return;
     }
     let player = player.single();
 

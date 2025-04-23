@@ -1,7 +1,11 @@
 use bevy::prelude::*;
 
 use crate::{
-    camera::isometric_camera::CameraYaw, creatures::movement::creature_movement::MovingCreature, input::input_manager::{self, button, motion, InputManager}, utils::{gameplayscene_loadstatus::GameplaySceneLoadedEvent, grid::Direction}
+    camera::isometric_camera::CameraYaw,
+    creatures::movement::creature_movement::MovingCreature,
+    game_world::fertile_ground::SpawnFertileGround,
+    input::input_manager::{self, button, motion, InputManager},
+    utils::{gameplayscene_loadstatus::GameplaySceneLoadedEvent, grid::Direction},
 };
 
 use super::states;
@@ -169,6 +173,8 @@ fn spawn_player_on_respawn_event(
 static MOVEMENT: input_manager::Action = input_manager::Action("movement");
 static ABILITY_FLOATY: input_manager::Action = input_manager::Action("ability_floaty");
 static ABILITY_CORDYCEPT: input_manager::Action = input_manager::Action("ability_cordycept");
+static ABILITY_SPAWN_FERTILE_GROUND: input_manager::Action =
+    input_manager::Action("spawn_fertile_ground");
 
 fn register_input(mut im: ResMut<input_manager::InputManager>) {
     im.register_action_motion(
@@ -207,6 +213,13 @@ fn register_input(mut im: ResMut<input_manager::InputManager>) {
             button::Variant::Gamepad(GamepadButton::East),
         ],
     );
+    im.register_action_button(
+        ABILITY_SPAWN_FERTILE_GROUND,
+        vec![
+            button::Variant::Keyboard(KeyCode::Space),
+            button::Variant::Gamepad(GamepadButton::South),
+        ],
+    );
 }
 
 fn spawn_player(
@@ -243,6 +256,7 @@ fn process_input(
     yaw: Res<CameraYaw>,
     mut commands: Commands,
     mut moved_last_frame: Local<bool>,
+    q_global_transform: Query<&GlobalTransform, With<Player>>,
 ) {
     if q_player.is_empty() {
         // Log something here?
@@ -264,6 +278,10 @@ fn process_input(
         commands.trigger(PlayerEvent::CordyCept(PlayerCordyCeptEvent {
             active: false,
         }));
+    } else if im.is_action_just_pressed(ABILITY_SPAWN_FERTILE_GROUND) {
+        commands.trigger(SpawnFertileGround {
+            request_instigator_transform: q_global_transform.single().clone(),
+        })
     }
 
     let Some(direction_vector) = im.get_motion(MOVEMENT).get_motion_opt_y(yaw.get()) else {

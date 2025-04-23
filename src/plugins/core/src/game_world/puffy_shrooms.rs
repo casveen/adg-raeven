@@ -30,15 +30,17 @@ fn spawn_puffy_shroom(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let SpawnPuffyShroomOnEntity(entity, transform) = trigger.event();
+    let SpawnPuffyShroomOnEntity(entity, _) = trigger.event();
+    let pos = Vec3::new(0., 1.5, 0.);
+    let scale = Vec3::splat(1.);
     let child = commands
         .spawn((
             PuffyShroom,
-            *transform,
-            Collider::cuboid(transform.scale.x, transform.scale.y, transform.scale.z),
+            Transform::from_translation(pos),
+            Collider::cuboid(scale.x, scale.y, scale.z),
             CollidingEntities::default(),
             //
-            Mesh3d(meshes.add(Cuboid::from_size(transform.scale))),
+            Mesh3d(meshes.add(Cuboid::from_size(scale))),
             MeshMaterial3d(materials.add(Color::srgb(1., 0., 0.))),
         ))
         .id();

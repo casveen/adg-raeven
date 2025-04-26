@@ -49,7 +49,6 @@ fn tick_spore_cloud(
 #[derive(Event)]
 pub struct SpawnSporeCloud(pub Transform);
 
-
 fn spawn_spore_cloud(
     trigger: Trigger<SpawnSporeCloud>,
     mut commands: Commands,
@@ -64,7 +63,6 @@ fn spawn_spore_cloud(
         SporeCloud::default(),
         Name::new("puff"),
         trigger.event().0,
-        Name::new("puff"),
         RigidBody::Dynamic,
         Collider::cuboid(SIZE, SIZE, SIZE), // TODO: teeeeechnically we wont need this, if we use a grid this is just visual
                                             // ParticleEffectBundle {

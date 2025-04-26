@@ -15,7 +15,8 @@ use bevy_hanabi::prelude::*;
 pub(super) struct SporeCloudPlugin;
 impl Plugin for SporeCloudPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, tick_spore_cloud)
+        app.add_plugins(HanabiPlugin)
+            .add_systems(Update, tick_spore_cloud)
             .add_observer(spawn_spore_cloud);
     }
 }
@@ -59,21 +60,18 @@ fn spawn_spore_cloud(
     let mesh = meshes.add(SphereMeshBuilder::new(0.5, SphereKind::Ico { subdivisions: 2 }).build());
     let effect = create_effect(mesh, &mut effects);
     // Spawn the effect.
-    let particle_entity =commands.spawn((
+    commands.spawn((
         SporeCloud::default(),
         Name::new("puff"),
         trigger.event().0,
-        RigidBody::Static,    
+        Name::new("puff"),
+        RigidBody::Dynamic,
         Collider::cuboid(SIZE, SIZE, SIZE), // TODO: teeeeechnically we wont need this, if we use a grid this is just visual
-        ParticleEffectBundle {
-            effect: ParticleEffect::new(effect),
-            ..default()
-        },
-    )).id();
-
-    commands
-    .entity(trigger.entity())
-    .add_child(particle_entity);
+                                            // ParticleEffectBundle {
+                                            //     effect: ParticleEffect::new(effect),
+                                            //     ..default()
+                                            // },
+    ));
 }
 
 /*******************

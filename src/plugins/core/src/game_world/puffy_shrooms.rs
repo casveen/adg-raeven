@@ -26,25 +26,25 @@ pub struct SpawnPuffyShroomOnEntity(pub Entity, pub Transform);
 fn spawn_puffy_shroom(
     trigger: Trigger<SpawnPuffyShroomOnEntity>,
     mut commands: Commands,
-    // tmp visuals
-    mut meshes: ResMut<Assets<Mesh>>,
+    asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let SpawnPuffyShroomOnEntity(entity, _) = trigger.event();
     let pos = Vec3::new(0., 1.5, 0.);
     let scale = Vec3::splat(1.);
-    let child = commands
-        .spawn((
+    let cordycept_mesh =
+        asset_server.load(GltfAssetLabel::Scene(0).from_asset("blueprints/cordyceps.glb"));
+    commands.entity(*entity).with_children(|p| {
+        p.spawn((
             PuffyShroom,
             Transform::from_translation(pos),
             Collider::cuboid(scale.x, scale.y, scale.z),
             CollidingEntities::default(),
             //
-            Mesh3d(meshes.add(Cuboid::from_size(scale))),
+            SceneRoot(cordycept_mesh),
             MeshMaterial3d(materials.add(Color::srgb(1., 0., 0.))),
-        ))
-        .id();
-    commands.entity(*entity).add_child(child);
+        ));
+    });
 }
 
 #[derive(Event)]

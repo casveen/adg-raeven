@@ -162,7 +162,7 @@ fn spawn_ant(
             Transform::default(),
             Collider::cuboid(t.scale.x, t.scale.y, t.scale.z),
             CollidingEntities::default(),
-            //PuffyShroomCollision, // todo, should be removed for cordycepted ant?
+            PuffyShroomCollision, // todo, should be removed for cordycepted ant?
             AntRutineComponent {
                 collection: event.collection,
                 current_point: event.first_rutine_point,

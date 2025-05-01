@@ -56,7 +56,6 @@ fn tick_spore_cloud(
     }
     for (entity, mut spore_cloud) in query_effect.iter_mut() {
         spore_cloud.0.tick(time.delta());
-        info!("tick particles");
         if spore_cloud.0.finished() {
             commands.entity(entity).despawn();
         }
@@ -74,7 +73,7 @@ fn spawn_spore_cloud(
 ) {
     let transform = trigger.event().0;
     // Create the mesh.
-    let mesh = meshes.add(SphereMeshBuilder::new(0.5, SphereKind::Ico { subdivisions: 2 }).build());
+    let mesh = meshes.add(SphereMeshBuilder::new(0.1, SphereKind::Ico { subdivisions: 2 }).build());
     let effect = create_effect(mesh, &mut effects);
     // Spawn the effect.
     commands.spawn((
@@ -103,25 +102,23 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
 
     // Position the particle laterally within a small radius.
     let init_xz_pos = SetPositionCircleModifier {
-        center: writer.lit(Vec3::Y).mul(writer.lit(2.0)).expr(),
+        center: writer.lit(Vec3::Y).mul(writer.lit(0.0)).expr(),
         axis: writer.lit(Vec3::Y).expr(),
         radius: writer.lit(0.2).expr(),
         dimension: ShapeDimension::Volume,
     };
 
-    // Position the particle vertically. Jiggle it a little bit for variety's
-    // sake.
     let init_y_pos = SetAttributeModifier::new(
         Attribute::POSITION,
         writer
             .attr(Attribute::POSITION)
-            .add(writer.lit(Vec3::Y) * writer.rand(ScalarType::Float).mul(writer.lit(1.2)))
+            .add(writer.lit(Vec3::Y) * writer.rand(ScalarType::Float).mul(writer.lit(0.5)))
             .expr(),
     );
 
     // Set up the age and lifetime.
     let init_age = SetAttributeModifier::new(Attribute::AGE, writer.lit(0.0).expr());
-    let init_lifetime = SetAttributeModifier::new(Attribute::LIFETIME, writer.lit(3.0).expr());
+    let init_lifetime = SetAttributeModifier::new(Attribute::LIFETIME, writer.lit(LIFETIME).expr());
 
     // Vary the size a bit.
     let init_size = SetAttributeModifier::new(
@@ -146,11 +143,12 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
     let phase1 = 1.0;
     let phase05 = 0.2;
 
+    let init_xz_vel = 0.8;
     let init_velocity = SetAttributeModifier::new(
         Attribute::F32X3_0,
         ((
             // speed
-            writer.rand(ScalarType::Float) * writer.lit(10.0) + writer.lit(5)
+            writer.rand(ScalarType::Float) * writer.lit(init_xz_vel) + writer.lit(5)
         )
         .mul(
             // random direction in XZ plane, normalized
@@ -185,7 +183,7 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
             + writer
                 .lit(Vec3::Y) //in phase 2, ACCELERATE upwards
                 .mul(
-                    writer.lit(0.005), //constant speed in phase 1
+                    writer.lit(0.00001), //constant speed in phase 1
                 )
                 .mul(writer.attr(Attribute::AGE).step(writer.lit(phase05))))
         .expr(),
@@ -193,27 +191,32 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
 
     let update_alpha = ColorOverLifetimeModifier {
         gradient: Gradient::linear(
-            CORNSILK.with_alpha(1.0).to_vec4(),
+            CORNSILK.with_alpha(0.4).to_vec4(),
             CORNSILK.with_alpha(0.0).to_vec4(),
         ),
     };
 
     let module = writer.finish();
 
+    let max_particles = 128;
     // Add the effect.
     effects.add(
-        EffectAsset::new(128, Spawner::burst(128.0.into(), 3.0.into()), module)
-            .with_name("cartoon explosion")
-            .init(init_xz_pos)
-            .init(init_y_pos)
-            .init(init_age)
-            .init(init_lifetime)
-            .init(init_velocity)
-            .init(init_size)
-            .update(velocity)
-            .update(update_size)
-            .update(acceleration)
-            .render(update_alpha)
-            .mesh(mesh),
+        EffectAsset::new(
+            max_particles,
+            Spawner::burst((max_particles as f32).into(), 0.05.into()),
+            module,
+        )
+        .with_name("cartoon explosion")
+        .init(init_xz_pos)
+        .init(init_y_pos)
+        .init(init_age)
+        .init(init_lifetime)
+        .init(init_velocity)
+        .init(init_size)
+        .update(velocity)
+        .update(update_size)
+        .update(acceleration)
+        .render(update_alpha)
+        .mesh(mesh),
     )
 }

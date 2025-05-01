@@ -9,7 +9,7 @@ use bevy_hanabi::prelude::*;
 /**
  * OPTIMIZATIONS:
  * - use a single particle systems for all mushrooms, instead of creating it exactly when needed.
- * 
+ *
  */
 
 pub(super) struct SporeCloudPlugin;
@@ -33,13 +33,30 @@ impl Default for SporeCloud {
     }
 }
 
+#[derive(Component, Reflect, Debug)]
+#[reflect(Component)]
+pub struct SporeCloudEffect(Timer);
+impl Default for SporeCloudEffect {
+    fn default() -> Self {
+        Self(Timer::from_seconds(LIFETIME, TimerMode::Once))
+    }
+}
+
 fn tick_spore_cloud(
-    mut query: Query<(Entity, &mut SporeCloud)>,
+    mut query_collider: Query<(Entity, &mut SporeCloud)>,
+    mut query_effect: Query<(Entity, &mut SporeCloudEffect)>,
     time: Res<Time>,
     mut commands: Commands,
 ) {
-    for (entity, mut spore_cloud) in query.iter_mut() {
+    for (entity, mut spore_cloud) in query_collider.iter_mut() {
         spore_cloud.0.tick(time.delta());
+        if spore_cloud.0.finished() {
+            commands.entity(entity).despawn();
+        }
+    }
+    for (entity, mut spore_cloud) in query_effect.iter_mut() {
+        spore_cloud.0.tick(time.delta());
+        info!("tick particles");
         if spore_cloud.0.finished() {
             commands.entity(entity).despawn();
         }
@@ -55,6 +72,7 @@ fn spawn_spore_cloud(
     mut meshes: ResMut<Assets<Mesh>>,
     mut effects: ResMut<Assets<EffectAsset>>, // particle systems go here
 ) {
+    let transform = trigger.event().0;
     // Create the mesh.
     let mesh = meshes.add(SphereMeshBuilder::new(0.5, SphereKind::Ico { subdivisions: 2 }).build());
     let effect = create_effect(mesh, &mut effects);
@@ -62,26 +80,30 @@ fn spawn_spore_cloud(
     commands.spawn((
         SporeCloud::default(),
         Name::new("puff"),
-        trigger.event().0,
+        transform,
         RigidBody::Dynamic,
         Collider::cuboid(SIZE, SIZE, SIZE), // TODO: teeeeechnically we wont need this, if we use a grid this is just visual
-                                            // ParticleEffectBundle {
-                                            //     effect: ParticleEffect::new(effect),
-                                            //     ..default()
-                                            // },
+    ));
+    commands.spawn((
+        SporeCloudEffect::default(),
+        ParticleEffectBundle {
+            effect: ParticleEffect::new(effect),
+            transform,
+            ..default()
+        },
     ));
 }
 
 /*******************
  * PARTICLES STUFF *
  ******************/
-// Builds the spore puff as a particle system
+// Builds the smoke puffs.
 fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handle<EffectAsset> {
     let writer = ExprWriter::new();
 
     // Position the particle laterally within a small radius.
     let init_xz_pos = SetPositionCircleModifier {
-        center: writer.lit(Vec3::ZERO).expr(),
+        center: writer.lit(Vec3::Y).mul(writer.lit(2.0)).expr(),
         axis: writer.lit(Vec3::Y).expr(),
         radius: writer.lit(0.2).expr(),
         dimension: ShapeDimension::Volume,
@@ -93,8 +115,7 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
         Attribute::POSITION,
         writer
             .attr(Attribute::POSITION)
-            .add(writer.lit(Vec3::Y)*writer.rand(ScalarType::Float).mul(writer.lit(1.2)))
-
+            .add(writer.lit(Vec3::Y) * writer.rand(ScalarType::Float).mul(writer.lit(1.2)))
             .expr(),
     );
 
@@ -116,8 +137,9 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
             .mul(
                 (writer
                     .lit(1.0)
-                    .add((writer.attr(Attribute::AGE)).mul(writer.lit(10)))
-            ).min(writer.lit(1.0)))
+                    .add((writer.attr(Attribute::AGE)).mul(writer.lit(10))))
+                .min(writer.lit(1.0)),
+            )
             .expr(),
     );
 
@@ -126,67 +148,62 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
 
     let init_velocity = SetAttributeModifier::new(
         Attribute::F32X3_0,
-        (
-            ( // speed
-                writer.rand(ScalarType::Float)*writer.lit(10.0)+writer.lit(5)
-            )
-            .mul( // random direction in XZ plane, normalized
-                (
-                    writer.lit(Vec3::X)*(writer.lit(2)*writer.rand(ScalarType::Float)+writer.lit(-1))+
-                    writer.lit(Vec3::Z)*(writer.lit(2)*writer.rand(ScalarType::Float)+writer.lit(-1))
-                ).normalized()
-            )
+        ((
+            // speed
+            writer.rand(ScalarType::Float) * writer.lit(10.0) + writer.lit(5)
         )
-        .expr()
+        .mul(
+            // random direction in XZ plane, normalized
+            (writer.lit(Vec3::X)
+                * (writer.lit(2) * writer.rand(ScalarType::Float) + writer.lit(-1))
+                + writer.lit(Vec3::Z)
+                    * (writer.lit(2) * writer.rand(ScalarType::Float) + writer.lit(-1)))
+            .normalized(),
+        ))
+        .expr(),
     );
 
     let velocity = SetAttributeModifier::new(
         Attribute::VELOCITY,
-        (
-            writer.attr(Attribute::F32X3_0) //direction AND speed, as set in init_velocity
+        (writer
+            .attr(Attribute::F32X3_0) //direction AND speed, as set in init_velocity
             .mul(
-                writer.lit(1.0)/((writer.lit(10)*writer.attr(Attribute::AGE)).exp()) //constant speed in phase 1
+                writer.lit(1.0) / ((writer.lit(10) * writer.attr(Attribute::AGE)).exp()), //constant speed in phase 1
             )
-            .mul(writer.lit(1.0)-writer.attr(Attribute::AGE).step(writer.lit(phase1)))
-            
-            +
-            (writer.attr(Attribute::F32X3_0)
-            .dot(writer.lit(Vec3::Y))) //in phase 2, move upwards
-            .mul(
-                
-                writer.lit(1.0) //constant speed in phase 1
-            )
-            .mul(writer.attr(Attribute::AGE).step(writer.lit(phase05)))
-        ).expr()
+            .mul(writer.lit(1.0) - writer.attr(Attribute::AGE).step(writer.lit(phase1)))
+            + (writer.attr(Attribute::F32X3_0).dot(writer.lit(Vec3::Y))) //in phase 2, move upwards
+                .mul(
+                    writer.lit(1.0), //constant speed in phase 1
+                )
+                .mul(writer.attr(Attribute::AGE).step(writer.lit(phase05))))
+        .expr(),
     );
 
-    let acceleration =  SetAttributeModifier::new(
+    let acceleration = SetAttributeModifier::new(
         Attribute::F32X3_0,
-        (
-            writer.attr(Attribute::F32X3_0)
-            +
-            writer.lit(Vec3::Y) //in phase 2, ACCELERATE upwards
-            .mul(
-                writer.lit(0.005) //constant speed in phase 1
-            )
-            .mul(writer.attr(Attribute::AGE).step(writer.lit(phase05)))
-        ).expr()
+        (writer.attr(Attribute::F32X3_0)
+            + writer
+                .lit(Vec3::Y) //in phase 2, ACCELERATE upwards
+                .mul(
+                    writer.lit(0.005), //constant speed in phase 1
+                )
+                .mul(writer.attr(Attribute::AGE).step(writer.lit(phase05))))
+        .expr(),
     );
 
-    let update_alpha =  ColorOverLifetimeModifier {
-        gradient: 
-            Gradient::linear(
-                CORNSILK.with_alpha(1.0).to_vec4(),
-                CORNSILK.with_alpha(0.0).to_vec4()
-            )
+    let update_alpha = ColorOverLifetimeModifier {
+        gradient: Gradient::linear(
+            CORNSILK.with_alpha(1.0).to_vec4(),
+            CORNSILK.with_alpha(0.0).to_vec4(),
+        ),
     };
 
     let module = writer.finish();
 
     // Add the effect.
     effects.add(
-        EffectAsset::new(128, Spawner::once(64.0.into(), true), module)
-            .with_name("Puff_effect")
+        EffectAsset::new(128, Spawner::burst(128.0.into(), 3.0.into()), module)
+            .with_name("cartoon explosion")
             .init(init_xz_pos)
             .init(init_y_pos)
             .init(init_age)

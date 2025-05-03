@@ -20,14 +20,16 @@ impl Plugin for GameWorldPlugin {
             puffy_shrooms::PuffyShroomsPlugin,
             spore_cloud::SporeCloudPlugin,
             water::WaterPlugin,
-        ));
+        ))
+        .register_type::<Wall>();
     }
 }
 
 #[derive(Component)]
 pub struct Ground;
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct Wall;
 
 #[derive(Component)]

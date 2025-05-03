@@ -98,6 +98,16 @@ pub fn creature_can_move(
     walkable_query: &Query<(Entity, &Walkable)>,
     world_grid: &Res<WorldGrid>,
 ) -> bool {
+    // Disallow player to move on tiles with Obstacles on it
+    if let MovingCreature::Player = creature {
+        if let Some(entities) = world_grid.0.get(&desired_coordinate) {
+            //there is SOMETHING there, but are there any obstacles?
+            if obstacle_query.iter_many(entities).count() > 0 {
+                return false;
+            }
+        }
+    }
+
     return true;
     let mut able_to_move = false;
     let below_desired_coordinate = Coordinate(desired_coordinate.0-IVec3::Y);

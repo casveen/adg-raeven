@@ -20972,6 +20972,17 @@
       "type": "string",
       "typeInfo": "Enum"
     },
+    "core::game_world::Wall": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "long_name": "core::game_world::Wall",
+      "properties": {},
+      "required": [],
+      "short_name": "Wall",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
     "core::game_world::creature::Infected": {
       "additionalProperties": false,
       "isComponent": true,
@@ -21002,6 +21013,17 @@
       "properties": {},
       "required": [],
       "short_name": "Walkable",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "core::game_world::exit_gate::ExitGate": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "long_name": "core::game_world::exit_gate::ExitGate",
+      "properties": {},
+      "required": [],
+      "short_name": "ExitGate",
       "type": "object",
       "typeInfo": "Struct"
     },
@@ -21124,6 +21146,28 @@
       "properties": {},
       "required": [],
       "short_name": "Water",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "core::game_world::win_screen::WinScreen": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "long_name": "core::game_world::win_screen::WinScreen",
+      "properties": {},
+      "required": [],
+      "short_name": "WinScreen",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "core::game_world::win_screen::WinScreenText": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "long_name": "core::game_world::win_screen::WinScreenText",
+      "properties": {},
+      "required": [],
+      "short_name": "WinScreenText",
       "type": "object",
       "typeInfo": "Struct"
     },

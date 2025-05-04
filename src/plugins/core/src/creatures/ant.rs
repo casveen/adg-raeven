@@ -4,6 +4,7 @@ use blenvy::{BlueprintInfo, HideUntilReady, SpawnBlueprint};
 
 use crate::{
     game_world::{
+        exit_gate::{DestroyExitGate, ExitGate},
         puffy_shrooms::PuffyShroomCollision,
         spore_cloud::{DestroySporeCloud, SpawnSporeCloud, SporeCloud},
         Wall,
@@ -193,14 +194,17 @@ fn cordyceptmovement(
 
 fn wall_collision(
     ant_query: Query<(Entity, &CollidingEntities), With<Ant>>,
-    wall_query: Query<(), With<Wall>>,
+    wall_query: Query<(&Wall, Option<&ExitGate>)>,
     mut commands: Commands,
 ) {
     for (entity, colliding_entities) in &ant_query {
         for colliding_entity in colliding_entities.iter() {
-            if wall_query.contains(*colliding_entity) {
+            if let Ok(wall) = wall_query.get(*colliding_entity) {
                 debug!("ant wall collision: {}, {:?}", entity, colliding_entities);
                 commands.entity(entity).trigger(KillAnt);
+                if let Some(_) = wall.1 {
+                    commands.trigger(DestroyExitGate);
+                }
             }
         }
     }

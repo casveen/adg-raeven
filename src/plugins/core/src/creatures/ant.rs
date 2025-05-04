@@ -5,7 +5,7 @@ use blenvy::{BlueprintInfo, HideUntilReady, SpawnBlueprint};
 use crate::{
     game_world::{
         puffy_shrooms::PuffyShroomCollision,
-        spore_cloud::{SpawnSporeCloud, SporeCloud},
+        spore_cloud::{DestroySporeCloud, SpawnSporeCloud, SporeCloud},
         Wall,
     },
     player::states::cordycept::{CordyCeptMovement, CordyCeptedComponent},
@@ -468,7 +468,11 @@ impl AntRutineComponent {
         let dir = (target_position - transform.translation).normalize();
         transform.translation += dir * ANT_MOVESPEED * delta;
     }*/
-    pub fn next_routine_direction(&self, transform: &mut Transform, target_position: &Vec3) -> Direction {
+    pub fn next_routine_direction(
+        &self,
+        transform: &mut Transform,
+        target_position: &Vec3,
+    ) -> Direction {
         //get direction between current position and target
         //go towards it in a "straight" line
         return Direction::North;
@@ -502,7 +506,7 @@ fn ant_rutine(
         match ant_rutine.action {
             AntRutineAction::Move(e_point) => {
                 let (_, point_transform) = q_rutine_points.get(e_point).unwrap();
-                
+
                 /*  dont actually perform the routine, let the movement system do that and et direction from routine
                 ant_rutine.interpolate(
                     &mut transform,
@@ -511,8 +515,8 @@ fn ant_rutine(
                 ); */
 
                 /*
-                move to ant interaction, 
-                */ 
+                move to ant interaction,
+                */
                 if ant_rutine.reached_point(&transform.translation, &point_transform.translation) {
                     info!("Ant reached rutine position");
                     let timer = commands

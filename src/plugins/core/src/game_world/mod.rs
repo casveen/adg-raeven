@@ -7,6 +7,7 @@ pub mod mushroom;
 pub mod puffy_shrooms;
 pub mod spore_cloud;
 pub mod water;
+pub mod win_screen;
 
 use bevy::prelude::*;
 
@@ -22,6 +23,7 @@ impl Plugin for GameWorldPlugin {
             puffy_shrooms::PuffyShroomsPlugin,
             spore_cloud::SporeCloudPlugin,
             water::WaterPlugin,
+            win_screen::WinScreenPlugin,
         ))
         .register_type::<Wall>();
     }

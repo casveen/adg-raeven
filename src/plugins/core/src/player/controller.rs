@@ -1,9 +1,10 @@
+use avian3d::prelude::{Collider, CollidingEntities, RigidBody, RigidBodyQueryItem};
 use bevy::prelude::*;
 
 use crate::{
     camera::isometric_camera::CameraYaw,
     creatures::movement::creature_movement::MovingCreature,
-    game_world::fertile_ground::SpawnFertileGround,
+    game_world::{exit_gate::DestroyExitGate, fertile_ground::SpawnFertileGround},
     input::input_manager::{self, button, motion, InputManager},
     utils::{gameplayscene_loadstatus::GameplaySceneLoadedEvent, grid::Direction},
 };
@@ -243,6 +244,8 @@ fn spawn_player(
             },
             player_spawn.transform,
             MovingCreature::Player,
+            Collider::sphere(0.5),
+            CollidingEntities::default(),
         ))
         // .insert_children(0, &[fsm_entity]);
         .with_children(|player| {

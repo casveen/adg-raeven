@@ -1,5 +1,6 @@
 pub mod creature;
 pub mod environment;
+pub mod exit_gate;
 pub mod fertile_ground;
 pub mod grid;
 pub mod mushroom;
@@ -14,6 +15,7 @@ impl Plugin for GameWorldPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             environment::EnvironmentPlugin,
+            exit_gate::ExitGatePlugin,
             fertile_ground::FertileGroundPlugin,
             grid::WorldGridPlugin,
             mushroom::MushroomPlugin,

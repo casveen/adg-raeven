@@ -1,5 +1,6 @@
 use avian3d::prelude::CollidingEntities;
 use bevy::prelude::*;
+use blenvy::{BlueprintInfo, MaterialInfo, SpawnBlueprint};
 
 use crate::player::controller::Player;
 
@@ -8,13 +9,18 @@ impl Plugin for WinScreenPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, player_collision)
             .add_observer(player_win_event)
-            .register_type::<WinScreen>();
+            .register_type::<WinScreen>()
+            .register_type::<WinScreenText>();
     }
 }
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 pub struct WinScreen;
+
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+pub struct WinScreenText;
 
 #[derive(Event)]
 pub struct WinEvent;
@@ -33,12 +39,25 @@ fn player_collision(
     }
 }
 
-fn player_win_event(_: Trigger<WinEvent>, mut local_check: Local<bool>) {
+fn player_win_event(
+    _: Trigger<WinEvent>,
+    mut local_check: Local<bool>,
+    q_winner_text_transform: Query<&GlobalTransform, With<WinScreenText>>,
+    mut commands: Commands,
+) {
     if *local_check {
         return;
     }
     *local_check = true;
-    info!("!!! PLAYER WINS");
-    warn!("!!! PLAYER WINS");
-    error!("!!! PLAYER WINS");
+    info!("!!! PLAYER WINS !!!");
+    warn!("!!! PLAYER WINS !!!");
+    error!("!!! PLAYER WINS !!!");
+
+    for global_transform in q_winner_text_transform.iter() {
+        commands.spawn((
+            BlueprintInfo::from_path("blueprints/winner_text.glb"),
+            SpawnBlueprint,
+            global_transform.compute_transform(),
+        ));
+    }
 }

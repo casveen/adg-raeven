@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use bevy::prelude::*;
 use bevy::utils::HashSet;
-use crate::creatures::ant::{AntRutineCollection, AntRutineComponent, AntRutinePoint};
+use crate::creatures::ant::{AntRutineCollection, AntRutineComponent, AntRutinePoint, Epochs, OnNewEpoch};
 use crate::game_world::creature::Infected;
 use crate::game_world::environment::{Obstacle, Walkable};
 use crate::game_world::grid::{Coordinate, WorldGrid};
@@ -276,6 +276,7 @@ fn interacting_creatures_system(
     obstacle_query: Query<(Entity, &Obstacle)>,
     walkable_query: Query<(Entity, &Walkable)>,
     world_grid: Res<WorldGrid>,
+    mut epochs: ResMut<Epochs>,
     mut world_state: ResMut<WorldMovementState>,
 
 ) {
@@ -313,11 +314,16 @@ fn interacting_creatures_system(
         //otherwise, stop and await player 
         if moving_creatures_query.is_empty() {
             *world_state = WorldMovementState::Stopped;
+            let next_epoch = epochs.increment().get();
+            commands.trigger(OnNewEpoch(next_epoch))
         } else {
             *world_state = WorldMovementState::Moving;
         }
     }   
 }
+
+//trigger first epochs. Lets ant spawn at start of game
+fn init_epochs(mut commands: Commands,) {commands.trigger(OnNewEpoch(0))}
 
 pub struct CreatureMovementPlugin;
 impl Plugin for CreatureMovementPlugin {
@@ -336,6 +342,7 @@ impl Plugin for CreatureMovementPlugin {
             look_for_stepping_finished_system, 
             interacting_creatures_system)
         )
+        .add_systems(Startup, init_epochs)
         .add_observer(on_world_start_moving);
     }      
 }

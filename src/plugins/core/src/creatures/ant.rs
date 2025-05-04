@@ -4,10 +4,7 @@ use blenvy::{BlueprintInfo, HideUntilReady, SpawnBlueprint};
 
 use crate::{
     game_world::{
-        exit_gate::{DestroyExitGate, ExitGate},
-        puffy_shrooms::PuffyShroomCollision,
-        spore_cloud::{DestroySporeCloud, SpawnSporeCloud, SporeCloud},
-        Wall,
+        exit_gate::{DestroyExitGate, ExitGate}, grid::WorldGrid, puffy_shrooms::PuffyShroomCollision, spore_cloud::{DestroySporeCloud, SpawnSporeCloud, SporeCloud}, Wall
     },
     player::states::cordycept::{CordyCeptMovement, CordyCeptedComponent},
     utils::{gameplayscene_loadstatus::GameplaySceneLoadedEvent, grid::Direction},
@@ -30,11 +27,6 @@ impl Plugin for AntPlugin {
                     wall_collision,
                     spore_cloud_collision,
                     anthill_entry_collision,
-                    spawner_evaluate_spawning,
-                    tick_spawn_timers,
-                    recent_movement_in_anthill_cooldown_timer
-                        .run_if(recent_movement_in_anthill_cooldown_timer_run_if),
-                    respawn_timer.run_if(respawn_timer_run_if),
                     ant_rutine,
                 ),
             )
@@ -43,7 +35,9 @@ impl Plugin for AntPlugin {
             .add_observer(spawn_ant)
             .add_observer(kill_ant)
             .add_observer(cordyceptmovement)
-            .add_observer(teleport_ant);
+            .add_observer(teleport_ant)
+            .add_observer(respawn_timer)
+            .init_resource::<Epochs>();
     }
 }
 
@@ -76,6 +70,26 @@ impl AntSpawner {
         self.current_num_ants < self.max_ants
     }
 }
+#[derive(Event)]
+pub struct OnNewEpoch(pub u8);
+
+#[derive(Resource, Reflect)]
+#[reflect(Resource)]
+pub struct Epochs(u8);
+impl Default for Epochs {
+    fn default() -> Self {
+        Self(0)
+    }
+}
+impl Epochs {
+    pub fn increment(&mut self) -> &mut Self {
+        self.0 += 1;
+        self
+    }
+    pub fn get(&self) -> u8 {
+        self.0
+    }
+}
 
 fn insert_antspawner(
     _: Trigger<GameplaySceneLoadedEvent>,
@@ -106,42 +120,25 @@ struct SpawnAnt {
 #[derive(Event)]
 struct KillAnt;
 
-fn spawner_evaluate_spawning(
-    mut query: Query<(Entity, &mut AntSpawner), Without<AntRespawnTimer>>,
-    mut commands: Commands,
-) {
-    for (entity, mut spawner) in query.iter_mut().filter(|(_, s)| s.should_spawn()) {
-        spawner.increment();
-        commands.entity(entity).insert((AntRespawnTimer {
-            timer: Timer::from_seconds(1.5, TimerMode::Once),
-        },));
-    }
-}
-
-fn tick_spawn_timers(mut query: Query<&mut AntRespawnTimer>, time: Res<Time>) {
-    for mut timer in query.iter_mut() {
-        timer.timer.tick(time.delta());
-    }
-}
-
-fn respawn_timer_run_if(query: Query<(), With<AntRespawnTimer>>) -> bool {
-    !query.is_empty()
-}
-
 fn respawn_timer(
-    query: Query<(Entity, &Transform, &AntRespawnTimer, &AntRutineCollection)>,
+    trigger: Trigger<OnNewEpoch>,
+    mut query: Query<(Entity, &Transform, &AntRutineCollection, &mut AntSpawner)>,
     mut commands: Commands,
 ) {
-    for (entity, transform, _, rutine_collection) in
-        query.iter().filter(|(_, _, t, _)| t.timer.finished())
-    {
-        commands.entity(entity).remove::<AntRespawnTimer>();
+    let epoch = trigger.event().0;
+    if epoch%3==0 { // spawn every 3 epochs
+        for (entity, transform, rutine_collection, mut spawner) in query.iter_mut() {
+            //commands.entity(entity).remove::<AntRespawnTimer>();
+            if spawner.should_spawn() {
+                spawner.increment();
 
-        commands.entity(entity).trigger(SpawnAnt {
-            transform: *transform,
-            collection: entity,
-            first_rutine_point: rutine_collection.get_first_point(),
-        });
+                commands.entity(entity).trigger(SpawnAnt {
+                    transform: *transform,
+                    collection: entity,
+                    first_rutine_point: rutine_collection.get_first_point(),
+                });
+            }
+        }
     }
 }
 
@@ -332,23 +329,6 @@ impl Default for RecentMovementInAntHill {
     fn default() -> Self {
         Self {
             cooldown_timer: Timer::from_seconds(2., TimerMode::Once),
-        }
-    }
-}
-
-fn recent_movement_in_anthill_cooldown_timer_run_if(q: Query<&RecentMovementInAntHill>) -> bool {
-    !q.is_empty()
-}
-
-fn recent_movement_in_anthill_cooldown_timer(
-    mut timers: Query<(Entity, &mut RecentMovementInAntHill)>,
-    time: Res<Time>,
-    mut commands: Commands,
-) {
-    for (entity, mut timer) in timers.iter_mut() {
-        timer.cooldown_timer.tick(time.delta());
-        if timer.cooldown_timer.finished() {
-            commands.entity(entity).remove::<RecentMovementInAntHill>();
         }
     }
 }

@@ -23,7 +23,7 @@ impl Plugin for SporeCloudPlugin {
 }
 
 const LIFETIME: f32 = 5.0;
-const SIZE: f32 = 2.0;
+const SIZE: f32 = 0.8;
 
 #[derive(Component, Reflect, Debug)]
 #[reflect(Component)]

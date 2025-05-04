@@ -221,7 +221,8 @@ fn spore_cloud_collision(
                     .entity(entity)
                     .insert(CordyCeptedComponent)
                     .remove::<AntRutineComponent>();
-                commands.entity(spore_cloud).despawn();
+                // destroy related spore cloud
+                commands.entity(spore_cloud).trigger(DestroySporeCloud);
             }
         }
     }

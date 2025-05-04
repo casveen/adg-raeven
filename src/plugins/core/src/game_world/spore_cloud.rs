@@ -17,7 +17,8 @@ impl Plugin for SporeCloudPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(HanabiPlugin)
             .add_systems(Update, tick_spore_cloud)
-            .add_observer(spawn_spore_cloud);
+            .add_observer(spawn_spore_cloud)
+            .add_observer(destroy_spore_cloud);
     }
 }
 
@@ -65,6 +66,9 @@ fn tick_spore_cloud(
 #[derive(Event)]
 pub struct SpawnSporeCloud(pub Transform);
 
+#[derive(Event)]
+pub struct DestroySporeCloud;
+
 fn spawn_spore_cloud(
     trigger: Trigger<SpawnSporeCloud>,
     mut commands: Commands,
@@ -76,21 +80,26 @@ fn spawn_spore_cloud(
     let mesh = meshes.add(SphereMeshBuilder::new(0.1, SphereKind::Ico { subdivisions: 2 }).build());
     let effect = create_effect(mesh, &mut effects);
     // Spawn the effect.
-    commands.spawn((
-        SporeCloud::default(),
-        Name::new("puff"),
-        transform,
-        RigidBody::Dynamic,
-        Collider::cuboid(SIZE, SIZE, SIZE), // TODO: teeeeechnically we wont need this, if we use a grid this is just visual
-    ));
-    commands.spawn((
-        SporeCloudEffect::default(),
-        ParticleEffectBundle {
-            effect: ParticleEffect::new(effect),
+    commands
+        .spawn((
+            SporeCloud::default(),
+            Name::new("puff"),
             transform,
-            ..default()
-        },
-    ));
+            RigidBody::Dynamic,
+            Collider::cuboid(SIZE, SIZE, SIZE), // TODO: teeeeechnically we wont need this, if we use a grid this is just visual
+        ))
+        .with_child((
+            SporeCloudEffect::default(),
+            ParticleEffectBundle {
+                effect: ParticleEffect::new(effect),
+                ..default()
+            },
+        ));
+}
+
+fn destroy_spore_cloud(trigger: Trigger<DestroySporeCloud>, mut commands: Commands) {
+    let entity = trigger.entity();
+    commands.entity(entity).remove_parent().despawn();
 }
 
 /*******************

@@ -121,7 +121,7 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
         Attribute::POSITION,
         writer
             .attr(Attribute::POSITION)
-            .add(writer.lit(Vec3::Y) * writer.rand(ScalarType::Float).mul(writer.lit(0.5)))
+            .add(writer.lit(Vec3::Y) * writer.rand(ScalarType::Float).mul(writer.lit(0.3)))
             .expr(),
     );
 
@@ -149,8 +149,8 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
             .expr(),
     );
 
-    let phase1 = 1.0;
-    let phase05 = 0.2;
+    let phase1 = 4.2;
+    let phase05 = 4.0;
 
     let init_xz_vel = 0.8;
     let init_velocity = SetAttributeModifier::new(
@@ -192,7 +192,7 @@ fn create_effect(mesh: Handle<Mesh>, effects: &mut Assets<EffectAsset>) -> Handl
             + writer
                 .lit(Vec3::Y) //in phase 2, ACCELERATE upwards
                 .mul(
-                    writer.lit(0.00001), //constant speed in phase 1
+                    writer.lit(0.005), //constant speed in phase 1
                 )
                 .mul(writer.attr(Attribute::AGE).step(writer.lit(phase05))))
         .expr(),

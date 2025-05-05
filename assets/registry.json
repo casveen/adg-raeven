@@ -13665,19 +13665,6 @@
       "type": "object",
       "typeInfo": "Struct"
     },
-    "bevy_picking::focus::PickingInteraction": {
-      "isComponent": true,
-      "isResource": false,
-      "long_name": "bevy_picking::focus::PickingInteraction",
-      "oneOf": [
-        "Pressed",
-        "Hovered",
-        "None"
-      ],
-      "short_name": "PickingInteraction",
-      "type": "string",
-      "typeInfo": "Enum"
-    },
     "bevy_picking::input::PointerInputPlugin": {
       "additionalProperties": false,
       "isComponent": false,
@@ -14819,7 +14806,7 @@
       "typeInfo": "TupleStruct"
     },
     "bevy_scene::components::DynamicSceneRoot": {
-      "isComponent": true,
+      "isComponent": false,
       "isResource": false,
       "items": false,
       "long_name": "bevy_scene::components::DynamicSceneRoot",
@@ -14835,7 +14822,7 @@
       "typeInfo": "TupleStruct"
     },
     "bevy_scene::components::SceneRoot": {
-      "isComponent": true,
+      "isComponent": false,
       "isResource": false,
       "items": false,
       "long_name": "bevy_scene::components::SceneRoot",

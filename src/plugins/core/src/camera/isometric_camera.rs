@@ -113,7 +113,7 @@ impl Default for IsometricCamera {
     fn default() -> Self {
         Self {
             pivot: Vec3::ZERO.with_z(2.),
-            angle_yaw: 20., // angles in degrees
+            angle_yaw: 45., // angles in degrees
             angle_pitch: -55.,
             spring_arm_length: 20.,
         }
